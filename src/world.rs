@@ -47,10 +47,10 @@ impl World {
         let mut world = Self {
             width,
             height,
-            starfield: Starfield::new(0, 2.0, 2.0),
+            starfield: Starfield::new(0, 0.1, 2.0),
             renderer: Renderer::new(width, height, pixels),
-            camera: Camera::new(Vector4::new(0.0, -2.0, -2.0, 0.0), Vector4::new(0.0, 0.0, -1.0, 0.0)),
-            projection: Matrix4::perspective(90.0, aspect_ratio, 0.1, 10.0),
+            camera: Camera::new(Vector4::new(0.0, -2.0, -2.0, 1.0), Vector4::new(0.0, 0.0, -1.0, 0.0)),
+            projection: Matrix4::perspective(100.0, aspect_ratio, 0.1, 10.0),
             instances: Vec::new(),
             time: 0.0,
         };
@@ -125,27 +125,27 @@ impl World {
         // }
 
         // world.spawn_instance("./assets/turtle.obj", "./assets/turtle.png", 1.0);
-        world.spawn_instance("./assets/car.obj", "./assets/car.png", Vector4::new(3.5, 0.0, 0.0, 0.0), -60.0, 1.0, true);
+        // world.spawn_instance("./assets/car.obj", "./assets/car.png", Vector4::new(3.5, 0.0, 0.0, 0.0), -60.0, 1.0, true);
 
-        world.spawn_instance("./assets/ghoul.obj", "./assets/ghoul.png", Vector4::new(-3.5, 0.0, 1.0, 0.0), 60.0, 1.0, true);
+        // world.spawn_instance("./assets/ghoul.obj", "./assets/ghoul.png", Vector4::new(-3.5, 0.0, 1.0, 0.0), 60.0, 1.0, true);
 
-        world.spawn_instance(
-            "./assets/house.obj",
-            "./assets/house.png",
-            Vector4::new(-10.0, 0.0, -10.0, 0.0),
-            30.0,
-            1.0,
-            true,
-        );
+        // world.spawn_instance(
+        //     "./assets/house.obj",
+        //     "./assets/house.png",
+        //     Vector4::new(-10.0, 0.0, -10.0, 0.0),
+        //     30.0,
+        //     1.0,
+        //     true,
+        // );
 
-        world.spawn_instance(
-            "./assets/plane.obj",
-            "./assets/plane.png",
-            Vector4::new(10.0, 6.0, -10.0, 0.0),
-            -130.0,
-            1.0,
-            true,
-        );
+        // world.spawn_instance(
+        //     "./assets/plane.obj",
+        //     "./assets/plane.png",
+        //     Vector4::new(10.0, 6.0, -10.0, 0.0),
+        //     -130.0,
+        //     1.0,
+        //     true,
+        // );
 
         // create a sky bitmap
         let mut bitmap = Bitmap::new(1, 128);
@@ -285,6 +285,9 @@ impl World {
         // self.starfield.render(&mut self.renderer.color_buffer, dt);
 
         // calculate view projection matrix
+        // let mut m1 = Matrix4::new_identity();
+        // m1.translate(1.0, -2.0, -100.0);
+
         let view_projection = Matrix4::multiply(&self.projection, &self.camera.transform());
         // let view_projection = &self.projection;
 
@@ -298,36 +301,45 @@ impl World {
         }
 
         // let identity = Matrix4::new_identity();
-        dbg!(&self.projection);
+        // dbg!(&self.projection);
+
+        dbg!(&view_projection);
 
         // # debug: draw all vertices
         for instance in self.instances.iter() {
+            let mvp = Matrix4::multiply(&view_projection, &instance.transform);
+            let identity = Matrix4::new_identity();
+            dbg!(&mvp);
             for v in instance.mesh.vertices.iter() {
-                let mvp = Matrix4::multiply(&view_projection, &instance.transform);
-                let identity = &Matrix4::new_identity();
-                let new_vertex = v.transform(&mvp, identity);
+                let new_vertex = v.transform(&mvp, &identity);
 
                 // @todo: fix here
+                // all vertices say that they are outside of the frustum!
                 // if !new_vertex.is_inside_view_frustum() {
                 //     continue;
                 // }
 
-                let ss_pos = new_vertex.transform(&ss_mat, identity).perspective_divide();
+                // it's not the perspective divide! it happens later... ->
+                let ss_pos = new_vertex.transform(&ss_mat, &identity).perspective_divide();
 
-                let color = Color::from_hex(0xFFFFFF55);
-                for i in -1..=1 {
-                    self.renderer.color_buffer.set_pixel(
-                        ss_pos.position.x as u32 + i as u32,
-                        ss_pos.position.y as u32 + i as u32,
-                        &color,
-                    );
+                self.renderer
+                    .color_buffer
+                    .set_pixel(ss_pos.position.x as u32, ss_pos.position.y as u32, &Color::from_hex(0xFFFFFF55));
 
-                    self.renderer.color_buffer.set_pixel(
-                        ss_pos.position.x as u32 - i as u32,
-                        ss_pos.position.y as u32 + i as u32,
-                        &color,
-                    );
-                }
+                // let color = Color::from_hex(0xFFFFFF55);
+                // for i in -1..=1 {
+                //     self.renderer.color_buffer.set_pixel(
+                //         (ss_pos.position.x as i32 + i) as u32,
+                //         (ss_pos.position.y as i32 + i) as u32,
+                //         &color,
+                //     );
+
+                //     self.renderer.color_buffer.set_pixel(
+                //         (ss_pos.position.x as i32 - i) as u32,
+                //         (ss_pos.position.y as i32 + i) as u32,
+                //         &color,
+                //     );
+                // }
 
                 // self.renderer.color_buffer.set_pixel(
                 //     ss_pos.position.x as u32,

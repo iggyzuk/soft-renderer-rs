@@ -12,456 +12,456 @@
 #include <map>
 #include <utility>
 
-// #define PI 3.14159265
+#define PI 3.14159265
 
-// typedef unsigned char byte;
-// typedef unsigned int  uint;
+typedef unsigned char byte;
+typedef unsigned int  uint;
 
-// template <typename T>
-// void LOG(const T& value) {
-//     std::cout << value << std::endl;
-// }
+template <typename T>
+void LOG(const T& value) {
+    std::cout << value << std::endl;
+}
 
-// template <typename U, typename... T>
-// void LOG(const U& head, const T&... tail) {
-//     std::cout << head << "; ";
-//     LOG(tail...);
-// }
+template <typename U, typename... T>
+void LOG(const U& head, const T&... tail) {
+    std::cout << head << "; ";
+    LOG(tail...);
+}
 
-// inline float random() {
-//     return static_cast <float> (rand()) / static_cast <float> (RAND_MAX);
-// }
-// inline float clamp(float value, float lower, float upper) {
-//     return value <= lower ? lower : value >= upper ? upper : value;
-// }
+inline float random() {
+    return static_cast <float> (rand()) / static_cast <float> (RAND_MAX);
+}
+inline float clamp(float value, float lower, float upper) {
+    return value <= lower ? lower : value >= upper ? upper : value;
+}
 
-// float lerp(float a, float b, float factor) {
-//     return a * (1.0f-factor) + b * factor;
-// }
+float lerp(float a, float b, float factor) {
+    return a * (1.0f-factor) + b * factor;
+}
 
-// class Vector4;
-// class Quaternion {
-// public:
-//     Quaternion(float x, float y, float z, float w) {
-//         this->x = x;
-//         this->y = y;
-//         this->z = z;
-//         this->w = w;
-//     }
-//     Quaternion(float angle, const Vector4& axis);
+class Vector4;
+class Quaternion {
+public:
+    Quaternion(float x, float y, float z, float w) {
+        this->x = x;
+        this->y = y;
+        this->z = z;
+        this->w = w;
+    }
+    Quaternion(float angle, const Vector4& axis);
 
-//     float length() const {
-//         return (float)sqrt(x*x + y*y + z*z + w*w);
-//     }
-//     Quaternion normalize() {
-//         float len = length();
-//         if(len != 0) {
-//             x /= len;
-//             y /= len;
-//             z /= len;
-//             w /= len;
-//         }
-//         return *this;
-//     }
-//     Quaternion conjugate() const {
-//         return Quaternion(-x, -y, -z, w);
-//     }
-//     Quaternion operator*(const Quaternion& q) const {
-//         float ww = w * q.w - x * q.x - y * q.y - z * q.z;
-//         float xx = x * q.w + w * q.x + y * q.z - z * q.y;
-//         float yy = y * q.w + w * q.y + z * q.x - x * q.z;
-//         float zz = z * q.w + w * q.z + x * q.y - y * q.x;
-//         return Quaternion(xx, yy, zz, ww);
-//     }
-//     Quaternion operator*(const Vector4& v) const;
+    float length() const {
+        return (float)sqrt(x*x + y*y + z*z + w*w);
+    }
+    Quaternion normalize() {
+        float len = length();
+        if(len != 0) {
+            x /= len;
+            y /= len;
+            z /= len;
+            w /= len;
+        }
+        return *this;
+    }
+    Quaternion conjugate() const {
+        return Quaternion(-x, -y, -z, w);
+    }
+    Quaternion operator*(const Quaternion& q) const {
+        float ww = w * q.w - x * q.x - y * q.y - z * q.z;
+        float xx = x * q.w + w * q.x + y * q.z - z * q.y;
+        float yy = y * q.w + w * q.y + z * q.x - x * q.z;
+        float zz = z * q.w + w * q.z + x * q.y - y * q.x;
+        return Quaternion(xx, yy, zz, ww);
+    }
+    Quaternion operator*(const Vector4& v) const;
 
-//     Quaternion operator+(const Quaternion& q) const {
-//         return Quaternion(x + q.x, y + q.y, z + q.z, w + q.w);
-//     }
-//     Quaternion operator-(const Quaternion& q) const {
-//         return Quaternion(x - q.x, y - q.y, z - q.z, w - q.w);
-//     }
-//     float dot(const Quaternion& q) const {
-//         return x * q.x + y * q.y + z * q.z + w * q.w;
-//     }
-//     float x {0.0f};
-//     float y {0.0f};
-//     float z {0.0f};
-//     float w {0.0f};
-// };
+    Quaternion operator+(const Quaternion& q) const {
+        return Quaternion(x + q.x, y + q.y, z + q.z, w + q.w);
+    }
+    Quaternion operator-(const Quaternion& q) const {
+        return Quaternion(x - q.x, y - q.y, z - q.z, w - q.w);
+    }
+    float dot(const Quaternion& q) const {
+        return x * q.x + y * q.y + z * q.z + w * q.w;
+    }
+    float x {0.0f};
+    float y {0.0f};
+    float z {0.0f};
+    float w {0.0f};
+};
 
-// class Vector4 {
-// public:
-//     Vector4(float x = 0.0f, float y = 0.0f, float z = 0.0f, float w = 1.0f) {
-//         this->x = x;
-//         this->y = y;
-//         this->z = z;
-//         this->w = w;
-//     }
-//     float length() const {
-//         return (float)sqrt(x*x + y*y + z*z + w*w);
-//     }
-//     Vector4 normalize() {
-//         float len = length();
-//         if(len != 0) {
-//             x /= len;
-//             y /= len;
-//             z /= len;
-//             w /= len;
-//         }
-//         return *this;
-//     }
-//     float dot(const Vector4& v) const {
-//         return x * v.x + y * v.y + z * v.z + w * v.w;
-//     }
-//     Vector4 cross(const Vector4& v) {
-//         float xx = y * v.z - z * v.y;
-//         float yy = z * v.x - x * v.z;
-//         float zz = x * v.y - y * v.x;
-//         return Vector4(xx, yy, zz, 0);
-//     }
-//     Vector4 lerp(const Vector4& dest, float factor) {
-//         return (*this) * (1.0f-factor) + dest * factor;
-//     }
-//     Vector4 operator+(const Vector4& v) const {
-//         return Vector4(x + v.x, y + v.y, z + v.z, w + v.w);
-//     }
-//     Vector4 operator-(const Vector4& v) const {
-//         return Vector4(x - v.x, y - v.y, z - v.z, w - v.w);
-//     }
-//     Vector4 operator*(const float factor) const {
-//         return Vector4(x * factor, y * factor, z * factor, w * factor);
-//     }
-//     Vector4 operator/(const float factor) const {
-//         assert(factor != 0);
-//         return Vector4(x / factor, y / factor, z / factor, w / factor);
-//     }
-//     Vector4 rotate(Quaternion& rotation) {
-//         Quaternion w = rotation * (*this) * rotation.conjugate();
-//         return Vector4(w.x, w.y, w.z);
-//     }
-//     Vector4 rotate(Vector4 axis, float angle) {
-//         float sinAngle = (float)sinf(-angle);
-//         float cosAngle = (float)cosf(-angle);
+class Vector4 {
+public:
+    Vector4(float x = 0.0f, float y = 0.0f, float z = 0.0f, float w = 1.0f) {
+        this->x = x;
+        this->y = y;
+        this->z = z;
+        this->w = w;
+    }
+    float length() const {
+        return (float)sqrt(x*x + y*y + z*z + w*w);
+    }
+    Vector4 normalize() {
+        float len = length();
+        if(len != 0) {
+            x /= len;
+            y /= len;
+            z /= len;
+            w /= len;
+        }
+        return *this;
+    }
+    float dot(const Vector4& v) const {
+        return x * v.x + y * v.y + z * v.z + w * v.w;
+    }
+    Vector4 cross(const Vector4& v) {
+        float xx = y * v.z - z * v.y;
+        float yy = z * v.x - x * v.z;
+        float zz = x * v.y - y * v.x;
+        return Vector4(xx, yy, zz, 0);
+    }
+    Vector4 lerp(const Vector4& dest, float factor) {
+        return (*this) * (1.0f-factor) + dest * factor;
+    }
+    Vector4 operator+(const Vector4& v) const {
+        return Vector4(x + v.x, y + v.y, z + v.z, w + v.w);
+    }
+    Vector4 operator-(const Vector4& v) const {
+        return Vector4(x - v.x, y - v.y, z - v.z, w - v.w);
+    }
+    Vector4 operator*(const float factor) const {
+        return Vector4(x * factor, y * factor, z * factor, w * factor);
+    }
+    Vector4 operator/(const float factor) const {
+        assert(factor != 0);
+        return Vector4(x / factor, y / factor, z / factor, w / factor);
+    }
+    Vector4 rotate(Quaternion& rotation) {
+        Quaternion w = rotation * (*this) * rotation.conjugate();
+        return Vector4(w.x, w.y, w.z);
+    }
+    Vector4 rotate(Vector4 axis, float angle) {
+        float sinAngle = (float)sinf(-angle);
+        float cosAngle = (float)cosf(-angle);
 
-//         return (*this).cross(axis * sinAngle) +           // Rotation on local X
-//                (*this) * cosAngle +                       // Rotation on local Z
-//                axis * (*this).dot(axis * (1 - cosAngle)); // Rotation on local Y
-//     }
-//     static Vector4 polar(float radius, float inclination, float azimuth) {
-//         return Vector4(radius * sinf(inclination) * cosf(azimuth), radius * sinf(inclination) * sinf(azimuth), radius * cosf(inclination));
-//     }
-//     static Vector4 polarDegrees(float radius, float inclination, float azimuth) {
-//         return polar(radius, inclination * PI / 180.0f, azimuth * PI / 180.0f);
-//     }
-//     float x {0.0f};
-//     float y {0.0f};
-//     float z {0.0f};
-//     float w {0.0f};
-// };
-// std::ostream& operator<<(std::ostream& out, const Vector4& rhs) {
-//     out << "(" << rhs.x << ", " << rhs.y << ", " << rhs.z << ")";
-//     return out;
-// }
+        return (*this).cross(axis * sinAngle) +           // Rotation on local X
+               (*this) * cosAngle +                       // Rotation on local Z
+               axis * (*this).dot(axis * (1 - cosAngle)); // Rotation on local Y
+    }
+    static Vector4 polar(float radius, float inclination, float azimuth) {
+        return Vector4(radius * sinf(inclination) * cosf(azimuth), radius * sinf(inclination) * sinf(azimuth), radius * cosf(inclination));
+    }
+    static Vector4 polarDegrees(float radius, float inclination, float azimuth) {
+        return polar(radius, inclination * PI / 180.0f, azimuth * PI / 180.0f);
+    }
+    float x {0.0f};
+    float y {0.0f};
+    float z {0.0f};
+    float w {0.0f};
+};
+std::ostream& operator<<(std::ostream& out, const Vector4& rhs) {
+    out << "(" << rhs.x << ", " << rhs.y << ", " << rhs.z << ")";
+    return out;
+}
 
-// // Quaternion definitions of forward declared methods
-// Quaternion::Quaternion(float angle, const Vector4& axis) {
-//     float sinHalfAngle = sinf(angle / 2.0f);
-//     float cosHalfAngle = cosf(angle / 2.0f);
+// Quaternion definitions of forward declared methods
+Quaternion::Quaternion(float angle, const Vector4& axis) {
+    float sinHalfAngle = sinf(angle / 2.0f);
+    float cosHalfAngle = cosf(angle / 2.0f);
 
-//     this->x = axis.x * sinHalfAngle;
-//     this->y = axis.y * sinHalfAngle;
-//     this->z = axis.z * sinHalfAngle;
-//     this->w = cosHalfAngle;
-// }
-// Quaternion Quaternion::operator*(const Vector4& v) const {
-//     float ww = -x * v.x - y * v.y - z * v.z;
-//     float xx =  w * v.x + y * v.z - z * v.y;
-//     float yy =  w * v.y + z * v.x - x * v.z;
-//     float zz =  w * v.z + x * v.y - y * v.x;
-//     return Quaternion(xx, yy, zz, ww);
-// }
+    this->x = axis.x * sinHalfAngle;
+    this->y = axis.y * sinHalfAngle;
+    this->z = axis.z * sinHalfAngle;
+    this->w = cosHalfAngle;
+}
+Quaternion Quaternion::operator*(const Vector4& v) const {
+    float ww = -x * v.x - y * v.y - z * v.z;
+    float xx =  w * v.x + y * v.z - z * v.y;
+    float yy =  w * v.y + z * v.x - x * v.z;
+    float zz =  w * v.z + x * v.y - y * v.x;
+    return Quaternion(xx, yy, zz, ww);
+}
 
-// Vector4 g_lightDirection;
+Vector4 g_lightDirection;
 
-// class Matrix4 {
-// public:
-//     Matrix4() {
-//         identity();
-//     }
-//     void identity() {
-//         for (uint i = 0; i < 4; ++i) {
-//             for (uint j = 0; j < 4; ++j) {
-//                 matrix[j][i] = (i == j ? 1.0f : 0.0f);
-//             }
-//         }
-//     }
-//     void viewport(unsigned short width, unsigned short height) {
-//         identity();
+class Matrix4 {
+public:
+    Matrix4() {
+        identity();
+    }
+    void identity() {
+        for (uint i = 0; i < 4; ++i) {
+            for (uint j = 0; j < 4; ++j) {
+                matrix[j][i] = (i == j ? 1.0f : 0.0f);
+            }
+        }
+    }
+    void viewport(unsigned short width, unsigned short height) {
+        identity();
 
-//         float halfWidth = (float)width / 2.0f;
-//         float halfHeight = (float)height / 2.0f;
+        float halfWidth = (float)width / 2.0f;
+        float halfHeight = (float)height / 2.0f;
 
-//         matrix[0][0] = halfWidth;
-//         matrix[1][1] = -halfHeight;
-//         matrix[3][0] = halfWidth - 0.5f;
-//         matrix[3][1] = halfHeight - 0.5f;
-//     }
-//     void perspective(float fov, float aspectRatio, float zNear, float zFar) {
-//         identity();
+        matrix[0][0] = halfWidth;
+        matrix[1][1] = -halfHeight;
+        matrix[3][0] = halfWidth - 0.5f;
+        matrix[3][1] = halfHeight - 0.5f;
+    }
+    void perspective(float fov, float aspectRatio, float zNear, float zFar) {
+        identity();
 
-//         float tanHalfFOV = (float)tan((fov / 2) * (PI / 180));
-//         float zRange = zNear - zFar;
+        float tanHalfFOV = (float)tan((fov / 2) * (PI / 180));
+        float zRange = zNear - zFar;
 
-//         matrix[0][0] = 1.0f / (tanHalfFOV * aspectRatio);
-//         matrix[1][1] = 1.0f / tanHalfFOV;
-//         matrix[2][2] = (-zNear -zFar)/zRange;
-//         matrix[3][2] = 2.0f * zFar * zNear / zRange;
-//         matrix[2][3] = 1.0f;
-//     }
-//     void lookAt(const Vector4& eye, const Vector4& target, const Vector4& upAxis) {
-//         Vector4 forward, right, up;
-//         Matrix4 m;
+        matrix[0][0] = 1.0f / (tanHalfFOV * aspectRatio);
+        matrix[1][1] = 1.0f / tanHalfFOV;
+        matrix[2][2] = (-zNear -zFar)/zRange;
+        matrix[3][2] = 2.0f * zFar * zNear / zRange;
+        matrix[2][3] = 1.0f;
+    }
+    void lookAt(const Vector4& eye, const Vector4& target, const Vector4& upAxis) {
+        Vector4 forward, right, up;
+        Matrix4 m;
 
-//         forward = target - eye;
-//         up = upAxis;
+        forward = target - eye;
+        up = upAxis;
 
-//         forward.normalize();
+        forward.normalize();
 
-//         right = up.cross(forward);
-//         right.normalize();
+        right = up.cross(forward);
+        right.normalize();
 
-//         up = forward.cross(right);
-//         up.normalize();
+        up = forward.cross(right);
+        up.normalize();
 
-//         m[0][0] = right.x;
-//         m[1][0] = right.y;
-//         m[2][0] = right.z;
+        m[0][0] = right.x;
+        m[1][0] = right.y;
+        m[2][0] = right.z;
 
-//         m[0][1] = up.x;
-//         m[1][1] = up.y;
-//         m[2][1] = up.z;
+        m[0][1] = up.x;
+        m[1][1] = up.y;
+        m[2][1] = up.z;
 
-//         m[0][2] = forward.x;
-//         m[1][2] = forward.y;
-//         m[2][2] = forward.z;
+        m[0][2] = forward.x;
+        m[1][2] = forward.y;
+        m[2][2] = forward.z;
 
-//         m.translate(-eye.x, -eye.y, -eye.z);
+        m.translate(-eye.x, -eye.y, -eye.z);
 
-//         *this = *this * m;
-//     }
-//     Matrix4 operator*(const Matrix4& mat) {
-//         Matrix4 m;
-//         for (uint i = 0; i < 4; ++i) {
-//             for (uint j = 0; j < 4; ++j) {
-//                 m[i][j] = matrix[0][j] * mat.matrix[i][0] +
-//                           matrix[1][j] * mat.matrix[i][1] +
-//                           matrix[2][j] * mat.matrix[i][2] +
-//                           matrix[3][j] * mat.matrix[i][3];
-//             }
-//         }
-//         return m;
-//     }
-//     Vector4 operator*(const Vector4& vec) const {
-//         float a[4];
-//         for (uint i = 0; i < 4; ++i) {
-//             a[i] = matrix[0][i] * vec.x +
-//                    matrix[1][i] * vec.y +
-//                    matrix[2][i] * vec.z +
-//                    matrix[3][i] * vec.w;
-//         }
-//         return Vector4(a[0], a[1], a[2], a[3]);
-//     }
-//     float* operator[](int a) {
-//         return matrix[a];
-//     }
-//     void translate(float x, float y, float z) {
-//         Matrix4 m;
-//         m[3][0] = x;
-//         m[3][1] = y;
-//         m[3][2] = z;
-//         *this = *this * m;
-//     }
-//     void rotateX(float angle) {
-//         Matrix4 m;
-//         float radian = (angle * ((float)PI / 180.0f));
-//         float sinus = sinf(radian);
-//         float cosinus = cosf(radian);
-//         m[1][1] = cosinus;
-//         m[2][2] = cosinus;
-//         m[1][2] = sinus;
-//         m[2][1] = -sinus;
-//         *this = *this * m;
-//     }
+        *this = *this * m;
+    }
+    Matrix4 operator*(const Matrix4& mat) {
+        Matrix4 m;
+        for (uint i = 0; i < 4; ++i) {
+            for (uint j = 0; j < 4; ++j) {
+                m[i][j] = matrix[0][j] * mat.matrix[i][0] +
+                          matrix[1][j] * mat.matrix[i][1] +
+                          matrix[2][j] * mat.matrix[i][2] +
+                          matrix[3][j] * mat.matrix[i][3];
+            }
+        }
+        return m;
+    }
+    Vector4 operator*(const Vector4& vec) const {
+        float a[4];
+        for (uint i = 0; i < 4; ++i) {
+            a[i] = matrix[0][i] * vec.x +
+                   matrix[1][i] * vec.y +
+                   matrix[2][i] * vec.z +
+                   matrix[3][i] * vec.w;
+        }
+        return Vector4(a[0], a[1], a[2], a[3]);
+    }
+    float* operator[](int a) {
+        return matrix[a];
+    }
+    void translate(float x, float y, float z) {
+        Matrix4 m;
+        m[3][0] = x;
+        m[3][1] = y;
+        m[3][2] = z;
+        *this = *this * m;
+    }
+    void rotateX(float angle) {
+        Matrix4 m;
+        float radian = (angle * ((float)PI / 180.0f));
+        float sinus = sinf(radian);
+        float cosinus = cosf(radian);
+        m[1][1] = cosinus;
+        m[2][2] = cosinus;
+        m[1][2] = sinus;
+        m[2][1] = -sinus;
+        *this = *this * m;
+    }
 
-//     void rotateY(float angle) {
-//         Matrix4 m;
-//         float radian = (angle * ((float)PI / 180.0f));
-//         float sinus = sinf(radian);
-//         float cosinus = cosf(radian);
-//         m[0][0] = cosinus;
-//         m[2][2] = cosinus;
-//         m[0][2] = -sinus;
-//         m[2][0] = sinus;
-//         *this = *this * m;
-//     }
+    void rotateY(float angle) {
+        Matrix4 m;
+        float radian = (angle * ((float)PI / 180.0f));
+        float sinus = sinf(radian);
+        float cosinus = cosf(radian);
+        m[0][0] = cosinus;
+        m[2][2] = cosinus;
+        m[0][2] = -sinus;
+        m[2][0] = sinus;
+        *this = *this * m;
+    }
 
-//     void rotateZ(float angle) {
-//         Matrix4 m;
-//         float radian = (angle * ((float)PI / 180.0f));
-//         float sinus = sinf(radian);
-//         float cosinus = cosf(radian);
-//         m[0][0] = cosinus;
-//         m[1][1] = cosinus;
-//         m[0][1] = sinus;
-//         m[1][0] = -sinus;
-//         *this = *this * m;
-//     }
-//     void scale(float x, float y, float z) {
-//         Matrix4 m;
-//         m[0][0] = x;
-//         m[1][1] = y;
-//         m[2][2] = z;
-//         *this = *this * m;
-//     }
-//     bool invert() {
-//         float inv[4][4];
+    void rotateZ(float angle) {
+        Matrix4 m;
+        float radian = (angle * ((float)PI / 180.0f));
+        float sinus = sinf(radian);
+        float cosinus = cosf(radian);
+        m[0][0] = cosinus;
+        m[1][1] = cosinus;
+        m[0][1] = sinus;
+        m[1][0] = -sinus;
+        *this = *this * m;
+    }
+    void scale(float x, float y, float z) {
+        Matrix4 m;
+        m[0][0] = x;
+        m[1][1] = y;
+        m[2][2] = z;
+        *this = *this * m;
+    }
+    bool invert() {
+        float inv[4][4];
 
-//         inv[0][0] =     matrix[1][1]  * matrix[2][2] * matrix[3][3] -
-//                         matrix[1][1]  * matrix[3][2] * matrix[2][3] -
-//                         matrix[1][2]  * matrix[2][1]  * matrix[3][3] +
-//                         matrix[1][2]  * matrix[3][1]  * matrix[2][3] +
-//                         matrix[1][3] * matrix[2][1]  * matrix[3][2] -
-//                         matrix[1][3] * matrix[3][1]  * matrix[2][2];
+        inv[0][0] =     matrix[1][1]  * matrix[2][2] * matrix[3][3] -
+                        matrix[1][1]  * matrix[3][2] * matrix[2][3] -
+                        matrix[1][2]  * matrix[2][1]  * matrix[3][3] +
+                        matrix[1][2]  * matrix[3][1]  * matrix[2][3] +
+                        matrix[1][3] * matrix[2][1]  * matrix[3][2] -
+                        matrix[1][3] * matrix[3][1]  * matrix[2][2];
 
-//         inv[0][1] =     -matrix[0][1]  * matrix[2][2] * matrix[3][3] +
-//                         matrix[0][1]  * matrix[3][2] * matrix[2][3] +
-//                         matrix[0][2]  * matrix[2][1]  * matrix[3][3] -
-//                         matrix[0][2]  * matrix[3][1]  * matrix[2][3] -
-//                         matrix[0][3] * matrix[2][1]  * matrix[3][2] +
-//                         matrix[0][3] * matrix[3][1]  * matrix[2][2];
+        inv[0][1] =     -matrix[0][1]  * matrix[2][2] * matrix[3][3] +
+                        matrix[0][1]  * matrix[3][2] * matrix[2][3] +
+                        matrix[0][2]  * matrix[2][1]  * matrix[3][3] -
+                        matrix[0][2]  * matrix[3][1]  * matrix[2][3] -
+                        matrix[0][3] * matrix[2][1]  * matrix[3][2] +
+                        matrix[0][3] * matrix[3][1]  * matrix[2][2];
 
-//         inv[0][2] =     matrix[0][1]  * matrix[1][2] * matrix[3][3] -
-//                         matrix[0][1]  * matrix[3][2] * matrix[1][3] -
-//                         matrix[0][2]  * matrix[1][1] * matrix[3][3] +
-//                         matrix[0][2]  * matrix[3][1] * matrix[1][3] +
-//                         matrix[0][3] * matrix[1][1] * matrix[3][2] -
-//                         matrix[0][3] * matrix[3][1] * matrix[1][2];
+        inv[0][2] =     matrix[0][1]  * matrix[1][2] * matrix[3][3] -
+                        matrix[0][1]  * matrix[3][2] * matrix[1][3] -
+                        matrix[0][2]  * matrix[1][1] * matrix[3][3] +
+                        matrix[0][2]  * matrix[3][1] * matrix[1][3] +
+                        matrix[0][3] * matrix[1][1] * matrix[3][2] -
+                        matrix[0][3] * matrix[3][1] * matrix[1][2];
 
-//         inv[0][3] =     -matrix[0][1]  * matrix[1][2] * matrix[2][3] +
-//                         matrix[0][1]  * matrix[2][2] * matrix[1][3] +
-//                         matrix[0][2]  * matrix[1][1] * matrix[2][3] -
-//                         matrix[0][2]  * matrix[2][1] * matrix[1][3] -
-//                         matrix[0][3] * matrix[1][1] * matrix[2][2] +
-//                         matrix[0][3] * matrix[2][1] * matrix[1][2];
+        inv[0][3] =     -matrix[0][1]  * matrix[1][2] * matrix[2][3] +
+                        matrix[0][1]  * matrix[2][2] * matrix[1][3] +
+                        matrix[0][2]  * matrix[1][1] * matrix[2][3] -
+                        matrix[0][2]  * matrix[2][1] * matrix[1][3] -
+                        matrix[0][3] * matrix[1][1] * matrix[2][2] +
+                        matrix[0][3] * matrix[2][1] * matrix[1][2];
 
-//         inv[1][0] =     -matrix[1][0]  * matrix[2][2] * matrix[3][3] +
-//                         matrix[1][0]  * matrix[3][2] * matrix[2][3] +
-//                         matrix[1][2]  * matrix[2][0] * matrix[3][3] -
-//                         matrix[1][2]  * matrix[3][0] * matrix[2][3] -
-//                         matrix[1][3] * matrix[2][0] * matrix[3][2] +
-//                         matrix[1][3] * matrix[3][0] * matrix[2][2];
+        inv[1][0] =     -matrix[1][0]  * matrix[2][2] * matrix[3][3] +
+                        matrix[1][0]  * matrix[3][2] * matrix[2][3] +
+                        matrix[1][2]  * matrix[2][0] * matrix[3][3] -
+                        matrix[1][2]  * matrix[3][0] * matrix[2][3] -
+                        matrix[1][3] * matrix[2][0] * matrix[3][2] +
+                        matrix[1][3] * matrix[3][0] * matrix[2][2];
 
-//         inv[1][1] =     matrix[0][0]  * matrix[2][2] * matrix[3][3] -
-//                         matrix[0][0]  * matrix[3][2] * matrix[2][3] -
-//                         matrix[0][2]  * matrix[2][0] * matrix[3][3] +
-//                         matrix[0][2]  * matrix[3][0] * matrix[2][3] +
-//                         matrix[0][3] * matrix[2][0] * matrix[3][2] -
-//                         matrix[0][3] * matrix[3][0] * matrix[2][2];
+        inv[1][1] =     matrix[0][0]  * matrix[2][2] * matrix[3][3] -
+                        matrix[0][0]  * matrix[3][2] * matrix[2][3] -
+                        matrix[0][2]  * matrix[2][0] * matrix[3][3] +
+                        matrix[0][2]  * matrix[3][0] * matrix[2][3] +
+                        matrix[0][3] * matrix[2][0] * matrix[3][2] -
+                        matrix[0][3] * matrix[3][0] * matrix[2][2];
 
-//         inv[1][2] =     -matrix[0][0]  * matrix[1][2] * matrix[3][3] +
-//                         matrix[0][0]  * matrix[3][2] * matrix[1][3] +
-//                         matrix[0][2]  * matrix[1][0] * matrix[3][3] -
-//                         matrix[0][2]  * matrix[3][0] * matrix[1][3] -
-//                         matrix[0][3] * matrix[1][0] * matrix[3][2] +
-//                         matrix[0][3] * matrix[3][0] * matrix[1][2];
+        inv[1][2] =     -matrix[0][0]  * matrix[1][2] * matrix[3][3] +
+                        matrix[0][0]  * matrix[3][2] * matrix[1][3] +
+                        matrix[0][2]  * matrix[1][0] * matrix[3][3] -
+                        matrix[0][2]  * matrix[3][0] * matrix[1][3] -
+                        matrix[0][3] * matrix[1][0] * matrix[3][2] +
+                        matrix[0][3] * matrix[3][0] * matrix[1][2];
 
-//         inv[1][3] =     matrix[0][0]  * matrix[1][2] * matrix[2][3] -
-//                         matrix[0][0]  * matrix[2][2] * matrix[1][3] -
-//                         matrix[0][2]  * matrix[1][0] * matrix[2][3] +
-//                         matrix[0][2]  * matrix[2][0] * matrix[1][3] +
-//                         matrix[0][3] * matrix[1][0] * matrix[2][2] -
-//                         matrix[0][3] * matrix[2][0] * matrix[1][2];
+        inv[1][3] =     matrix[0][0]  * matrix[1][2] * matrix[2][3] -
+                        matrix[0][0]  * matrix[2][2] * matrix[1][3] -
+                        matrix[0][2]  * matrix[1][0] * matrix[2][3] +
+                        matrix[0][2]  * matrix[2][0] * matrix[1][3] +
+                        matrix[0][3] * matrix[1][0] * matrix[2][2] -
+                        matrix[0][3] * matrix[2][0] * matrix[1][2];
 
-//         inv[2][0] =     matrix[1][0]  * matrix[2][1] * matrix[3][3] -
-//                         matrix[1][0]  * matrix[3][1] * matrix[2][3] -
-//                         matrix[1][1]  * matrix[2][0] * matrix[3][3] +
-//                         matrix[1][1]  * matrix[3][0] * matrix[2][3] +
-//                         matrix[1][3] * matrix[2][0] * matrix[3][1] -
-//                         matrix[1][3] * matrix[3][0] * matrix[2][1];
+        inv[2][0] =     matrix[1][0]  * matrix[2][1] * matrix[3][3] -
+                        matrix[1][0]  * matrix[3][1] * matrix[2][3] -
+                        matrix[1][1]  * matrix[2][0] * matrix[3][3] +
+                        matrix[1][1]  * matrix[3][0] * matrix[2][3] +
+                        matrix[1][3] * matrix[2][0] * matrix[3][1] -
+                        matrix[1][3] * matrix[3][0] * matrix[2][1];
 
-//         inv[2][1] =     -matrix[0][0]  * matrix[2][1] * matrix[3][3] +
-//                         matrix[0][0]  * matrix[3][1] * matrix[2][3] +
-//                         matrix[0][1]  * matrix[2][0] * matrix[3][3] -
-//                         matrix[0][1]  * matrix[3][0] * matrix[2][3] -
-//                         matrix[0][3] * matrix[2][0] * matrix[3][1] +
-//                         matrix[0][3] * matrix[3][0] * matrix[2][1];
+        inv[2][1] =     -matrix[0][0]  * matrix[2][1] * matrix[3][3] +
+                        matrix[0][0]  * matrix[3][1] * matrix[2][3] +
+                        matrix[0][1]  * matrix[2][0] * matrix[3][3] -
+                        matrix[0][1]  * matrix[3][0] * matrix[2][3] -
+                        matrix[0][3] * matrix[2][0] * matrix[3][1] +
+                        matrix[0][3] * matrix[3][0] * matrix[2][1];
 
-//         inv[2][2] =     matrix[0][0]  * matrix[1][1] * matrix[3][3] -
-//                         matrix[0][0]  * matrix[3][1] * matrix[1][3] -
-//                         matrix[0][1]  * matrix[1][0] * matrix[3][3] +
-//                         matrix[0][1]  * matrix[3][0] * matrix[1][3] +
-//                         matrix[0][3] * matrix[1][0] * matrix[3][1] -
-//                         matrix[0][3] * matrix[3][0] * matrix[1][1];
+        inv[2][2] =     matrix[0][0]  * matrix[1][1] * matrix[3][3] -
+                        matrix[0][0]  * matrix[3][1] * matrix[1][3] -
+                        matrix[0][1]  * matrix[1][0] * matrix[3][3] +
+                        matrix[0][1]  * matrix[3][0] * matrix[1][3] +
+                        matrix[0][3] * matrix[1][0] * matrix[3][1] -
+                        matrix[0][3] * matrix[3][0] * matrix[1][1];
 
-//         inv[2][3] =     -matrix[0][0]  * matrix[1][1] * matrix[2][3] +
-//                         matrix[0][0]  * matrix[2][1] * matrix[1][3] +
-//                         matrix[0][1]  * matrix[1][0] * matrix[2][3] -
-//                         matrix[0][1]  * matrix[2][0] * matrix[1][3] -
-//                         matrix[0][3] * matrix[1][0] * matrix[2][1] +
-//                         matrix[0][3] * matrix[2][0] * matrix[1][1];
+        inv[2][3] =     -matrix[0][0]  * matrix[1][1] * matrix[2][3] +
+                        matrix[0][0]  * matrix[2][1] * matrix[1][3] +
+                        matrix[0][1]  * matrix[1][0] * matrix[2][3] -
+                        matrix[0][1]  * matrix[2][0] * matrix[1][3] -
+                        matrix[0][3] * matrix[1][0] * matrix[2][1] +
+                        matrix[0][3] * matrix[2][0] * matrix[1][1];
 
-//         inv[3][0] =     -matrix[1][0] * matrix[2][1] * matrix[3][2] +
-//                         matrix[1][0] * matrix[3][1] * matrix[2][2] +
-//                         matrix[1][1] * matrix[2][0] * matrix[3][2] -
-//                         matrix[1][1] * matrix[3][0] * matrix[2][2] -
-//                         matrix[1][2] * matrix[2][0] * matrix[3][1] +
-//                         matrix[1][2] * matrix[3][0] * matrix[2][1];
+        inv[3][0] =     -matrix[1][0] * matrix[2][1] * matrix[3][2] +
+                        matrix[1][0] * matrix[3][1] * matrix[2][2] +
+                        matrix[1][1] * matrix[2][0] * matrix[3][2] -
+                        matrix[1][1] * matrix[3][0] * matrix[2][2] -
+                        matrix[1][2] * matrix[2][0] * matrix[3][1] +
+                        matrix[1][2] * matrix[3][0] * matrix[2][1];
 
-//         inv[3][1] =     matrix[0][0] * matrix[2][1] * matrix[3][2] -
-//                         matrix[0][0] * matrix[3][1] * matrix[2][2] -
-//                         matrix[0][1] * matrix[2][0] * matrix[3][2] +
-//                         matrix[0][1] * matrix[3][0] * matrix[2][2] +
-//                         matrix[0][2] * matrix[2][0] * matrix[3][1] -
-//                         matrix[0][2] * matrix[3][0] * matrix[2][1];
+        inv[3][1] =     matrix[0][0] * matrix[2][1] * matrix[3][2] -
+                        matrix[0][0] * matrix[3][1] * matrix[2][2] -
+                        matrix[0][1] * matrix[2][0] * matrix[3][2] +
+                        matrix[0][1] * matrix[3][0] * matrix[2][2] +
+                        matrix[0][2] * matrix[2][0] * matrix[3][1] -
+                        matrix[0][2] * matrix[3][0] * matrix[2][1];
 
-//         inv[3][2] =     -matrix[0][0] * matrix[1][1] * matrix[3][2] +
-//                         matrix[0][0] * matrix[3][1] * matrix[1][2] +
-//                         matrix[0][1] * matrix[1][0] * matrix[3][2] -
-//                         matrix[0][1] * matrix[3][0] * matrix[1][2] -
-//                         matrix[0][2] * matrix[1][0] * matrix[3][1] +
-//                         matrix[0][2] * matrix[3][0] * matrix[1][1];
+        inv[3][2] =     -matrix[0][0] * matrix[1][1] * matrix[3][2] +
+                        matrix[0][0] * matrix[3][1] * matrix[1][2] +
+                        matrix[0][1] * matrix[1][0] * matrix[3][2] -
+                        matrix[0][1] * matrix[3][0] * matrix[1][2] -
+                        matrix[0][2] * matrix[1][0] * matrix[3][1] +
+                        matrix[0][2] * matrix[3][0] * matrix[1][1];
 
-//         inv[3][3] =     matrix[0][0] * matrix[1][1] * matrix[2][2] -
-//                         matrix[0][0] * matrix[2][1] * matrix[1][2] -
-//                         matrix[0][1] * matrix[1][0] * matrix[2][2] +
-//                         matrix[0][1] * matrix[2][0] * matrix[1][2] +
-//                         matrix[0][2] * matrix[1][0] * matrix[2][1] -
-//                         matrix[0][2] * matrix[2][0] * matrix[1][1];
+        inv[3][3] =     matrix[0][0] * matrix[1][1] * matrix[2][2] -
+                        matrix[0][0] * matrix[2][1] * matrix[1][2] -
+                        matrix[0][1] * matrix[1][0] * matrix[2][2] +
+                        matrix[0][1] * matrix[2][0] * matrix[1][2] +
+                        matrix[0][2] * matrix[1][0] * matrix[2][1] -
+                        matrix[0][2] * matrix[2][0] * matrix[1][1];
 
-//         // Find determinant and check if it's zero meaning matrix is not invertable
-//         float det =     matrix[0][0] * inv[0][0] +
-//                         matrix[1][0] * inv[0][1] +
-//                         matrix[2][0] * inv[0][2] +
-//                         matrix[3][0] * inv[0][3];
+        // Find determinant and check if it's zero meaning matrix is not invertable
+        float det =     matrix[0][0] * inv[0][0] +
+                        matrix[1][0] * inv[0][1] +
+                        matrix[2][0] * inv[0][2] +
+                        matrix[3][0] * inv[0][3];
 
-//         if (det == 0) return false;
+        if (det == 0) return false;
 
-//         // Fill the matrix with inverted values
-//         det = 1.0 / det;
-//         for(int j = 0; j < 4; j++){
-//             for(int i = 0; i < 4; i++){
-//                 matrix[j][i] = inv[j][i] * det;
-//             }
-//         }
-//         return true;
-//     }
-//     inline Vector4 translation() const {
-//         return Vector4(matrix[3][0], matrix[3][1], matrix[3][2]);
-//     }
-// private:
-//     float matrix[4][4];
-// };
+        // Fill the matrix with inverted values
+        det = 1.0 / det;
+        for(int j = 0; j < 4; j++){
+            for(int i = 0; i < 4; i++){
+                matrix[j][i] = inv[j][i] * det;
+            }
+        }
+        return true;
+    }
+    inline Vector4 translation() const {
+        return Vector4(matrix[3][0], matrix[3][1], matrix[3][2]);
+    }
+private:
+    float matrix[4][4];
+};
 
 
 class Color {

@@ -13,16 +13,16 @@ pub struct Matrix4 {
 }
 
 // Matrix
-//
-// tx, ty, tz for translation
 // [1 0 0 tx]
-// [0 1 0 ty]
+// [0 1 0 ty] < [3][1]
 // [0 0 1 tz]
 // [0 0 0  1]
+// tx, ty, tz for translation
+// [col][row]
 impl Matrix4 {
     pub fn new() -> Self {
         Self {
-            matrix: [[0.0; 4], [0.0; 4], [0.0; 4], [0.0; 4]],
+            matrix: Default::default(),
         }
     }
 
@@ -35,7 +35,7 @@ impl Matrix4 {
     pub fn identity(&mut self) {
         for i in 0..4 {
             for j in 0..4 {
-                self[j][i] = if i == j { 1.0 } else { 0.0 }
+                self[i][j] = if i == j { 1.0 } else { 0.0 }
             }
         }
     }
@@ -96,6 +96,11 @@ impl Matrix4 {
         // we save the original z value inside of w (of the resulting vector)
         matrix[2][3] = 1.0;
 
+        // alternative, why?
+        // matrix[2][2] = -(z_far + z_near) / z_range;
+        // matrix[3][2] = 2.0 * (z_far * z_near) / z_range;
+        // matrix[2][3] = -1.0;
+
         matrix
     }
 
@@ -144,7 +149,7 @@ impl Matrix4 {
         m[1][2] = forward.y;
         m[2][2] = forward.z;
 
-        m.translate(eye.x, eye.y, eye.z);
+        m.translate(-eye.x, -eye.y, -eye.z);
 
         self.matrix = Self::multiply(self, &m).matrix;
     }
@@ -332,7 +337,7 @@ impl Matrix4 {
 
     #[inline(always)]
     pub fn translation(&self) -> Vector4 {
-        Vector4::new(self[3][0], self[3][1], self[3][2], 0.0)
+        Vector4::new(self[3][0], self[3][1], self[3][2], 1.0)
     }
 }
 
@@ -353,7 +358,7 @@ impl DerefMut for Matrix4 {
 impl Debug for Matrix4 {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         for i in 0..4 {
-            writeln!(f, "[{},{},{},{}]", self.matrix[i][0], self.matrix[i][1], self.matrix[i][2], self.matrix[i][3])?;
+            writeln!(f, "[{},{},{},{}]", self.matrix[0][i], self.matrix[1][0], self.matrix[2][i], self.matrix[3][i])?;
         }
         Ok(())
     }

@@ -18,9 +18,9 @@ pub struct Vector4 {
 impl Default for Vector4 {
     fn default() -> Self {
         Self {
-            x: Default::default(),
-            y: Default::default(),
-            z: Default::default(),
+            x: 0.0,
+            y: 0.0,
+            z: 0.0,
             w: 1.0,
         }
     }
@@ -52,7 +52,7 @@ impl Vector4 {
         x: 0.0,
         y: 1.0,
         z: 0.0,
-        w: 1.0,
+        w: 0.0,
     };
 
     pub const FORWARD: Vector4 = Vector4 {
@@ -122,7 +122,7 @@ impl Vector4 {
             x: radius * (inclination.sin()) * (azimuth.cos()),
             y: radius * (inclination.sin()) * (azimuth.sin()),
             z: radius * (inclination.cos()),
-            w: 0.0,
+            w: 1.0,
         }
     }
 

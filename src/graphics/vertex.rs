@@ -14,7 +14,6 @@ impl Vertex {
 
     pub fn transform(mut self, transform_mat: &Matrix4, normal_mat: &Matrix4) -> Self {
         self.position = Matrix4::multiply_vector(transform_mat, self.position);
-        // for light direction
         self.normal = Matrix4::multiply_vector(normal_mat, self.normal);
         self
     }
@@ -67,25 +66,6 @@ impl Vertex {
     // -w ≤ x ≤ +w      multiply both sides by w
     //
     // clipping before perspective divide
-    // pub fn is_inside_view_frustum(&self) -> bool {
-    //     if (self.position.x).abs() > (self.position.w).abs() {
-    //         return false;
-    //     }
-    //     if (self.position.y).abs() > (self.position.w).abs() {
-    //         return false;
-    //     }
-    //     if (self.position.z).abs() > (self.position.w).abs() {
-    //         return false;
-    //     }
-    //     return true;
-    // }
-
-    // bool isInsideViewFrustum() {
-    //     return fabs(position.x) <= fabs(position.w) &&
-    //            fabs(position.y) <= fabs(position.w) &&
-    //            fabs(position.z) <= fabs(position.w);
-    // }
-
     pub fn is_inside_view_frustum(&self) -> bool {
         (self.position.x).abs() <= (self.position.w).abs()
             && (self.position.y).abs() <= (self.position.w).abs()

@@ -1,8 +1,11 @@
+// #![allow(arithmetic_overflow)]
+
 use std::ops::{Deref, DerefMut};
 
 use crate::math::lerp;
 
 use super::color::Color;
+
 
 /// Bitmap with format: RGBA
 #[derive(Debug, Clone)]
@@ -36,7 +39,7 @@ impl Bitmap {
     }
 
     pub fn set_pixel(&mut self, x: u32, y: u32, color: &Color) {
-        let index = ((x + y * self.width) * 4) as usize;
+        let index = ((x as usize + y as usize * self.width as usize) * 4) as usize;
 
         if index < 0 || index >= (self.width * self.height * 4) as usize {
             return;

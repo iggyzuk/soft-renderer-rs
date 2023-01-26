@@ -10,6 +10,14 @@ scan buffer (solid fill)
     #7 rewatch, reimplement
 
 [ ]what broke the game? test your debugging skills! -----
+    - transformation when moving camera
+        - debug shows it works
+        - matrix multiplication maybe?
+    - not quaternion, rotations work
+    - could be perspective projection matrix
+        - vertices after mvp transformation say they are invisible
+            not moved so must be matrix issues
+        - could be vector w: 1 component
 [ ]understand the gradient formula
     - it's a slope, X and Y diffs, steps
 [ ]understand clip space

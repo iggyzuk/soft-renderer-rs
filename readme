@@ -1,0 +1,34 @@
+scan buffer (solid fill)
+    y-axis x-axis min x-axis max
+    y:0, min:2, max:6
+    y:1, min:1, max:7
+    y:2, min:0, max:8
+
+2d-simplex: triangle
+    flat in 3d space
+    how to convert a triangle into a scan buffer?
+    #7 rewatch, reimplement
+
+[ ]what broke the game? test your debugging skills! -----
+[ ]understand the gradient formula
+    - it's a slope, X and Y diffs, steps
+[ ]understand clip space
+    [x]fix weird corner clip error
+        - when all vertices are out of the screen but still need to be clipped
+[ ]understand perspective projection (x,y movements)
+    [ ]clean up starfield
+[ ]understand matrix look-at function
+[ ]understand how the triangles clipped on the corners
+[ ]remove pub in unnecessary places
+[ ]fix camera movements
+    [ ]improve passed enums
+[ ]remove commented code
+[ ]remove main.cpp and references
+[ ]add some scenery models
+[ ]speed up mesh loader
+[ ]pass light direction to gradients
+[ ]more debug variables in renderer
+[ ]implement shadow mapping
+    https://www.youtube.com/watch?v=EsccgeUpdsM&list=PLEETnX-uPtBVG1ao7GCESh2vOayJXDbAl&index=7
+
+example scene with automatic motion: https://github.com/HannesMann/keyframe

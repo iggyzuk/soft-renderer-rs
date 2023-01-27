@@ -17,7 +17,7 @@ mod world;
 
 const WIDTH: u32 = 1080;
 const HEIGHT: u32 = 720;
-const RESOLUTION: u32 = 2;
+const RESOLUTION: u32 = 3;
 
 fn main() {
     simple_logger::init_with_level(log::Level::Info).unwrap();

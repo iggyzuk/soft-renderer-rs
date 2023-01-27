@@ -59,11 +59,11 @@ impl Vertex {
 
     // lerp all vertex values, it's used for clipping vertices
     pub fn lerp(&self, other: &Vertex, lerp_amt: f32) -> Self {
-        Self::new(
+        return Self::new(
             self.position.lerp(other.position, lerp_amt),
             self.texcoords.lerp(other.texcoords, lerp_amt),
             self.normal.lerp(other.normal, lerp_amt),
-        )
+        );
     }
 
     // clipping before perspective divide

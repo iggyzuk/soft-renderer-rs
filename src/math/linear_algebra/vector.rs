@@ -136,12 +136,12 @@ impl std::ops::Add for Vector4 {
     type Output = Self;
 
     fn add(self, rhs: Self) -> Self::Output {
-        Self::new(
+        return Self::new(
             self.x + rhs.x,
             self.y + rhs.y,
             self.z + rhs.z,
             self.w + rhs.w,
-        )
+        );
     }
 }
 
@@ -149,12 +149,12 @@ impl std::ops::Sub for Vector4 {
     type Output = Self;
 
     fn sub(self, rhs: Self) -> Self::Output {
-        Self::new(
+        return Self::new(
             self.x - rhs.x,
             self.y - rhs.y,
             self.z - rhs.z,
             self.w - rhs.w,
-        )
+        );
     }
 }
 
@@ -162,7 +162,7 @@ impl std::ops::Mul<f32> for Vector4 {
     type Output = Self;
 
     fn mul(self, rhs: f32) -> Self::Output {
-        Self::new(self.x * rhs, self.y * rhs, self.z * rhs, self.w * rhs)
+        return Self::new(self.x * rhs, self.y * rhs, self.z * rhs, self.w * rhs);
     }
 }
 
@@ -171,7 +171,7 @@ impl std::ops::Div<f32> for Vector4 {
 
     fn div(self, rhs: f32) -> Self::Output {
         assert_ne!(rhs, 0.0);
-        Self::new(self.x / rhs, self.y / rhs, self.z / rhs, self.w / rhs)
+        return Self::new(self.x / rhs, self.y / rhs, self.z / rhs, self.w / rhs);
     }
 }
 
@@ -188,7 +188,7 @@ impl Neg for Vector4 {
     type Output = Self;
 
     fn neg(self) -> Self::Output {
-        Self::new(-self.x, -self.y, -self.z, -self.w)
+        return Self::new(-self.x, -self.y, -self.z, -self.w);
     }
 }
 

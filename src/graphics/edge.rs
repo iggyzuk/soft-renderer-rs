@@ -9,15 +9,16 @@ use super::{
 
 // move along the edge y and some x and increase steppable values as you go along
 #[derive(Debug)]
+#[rustfmt::skip]
 pub struct Edge {
-    pub x: f32,                       // current x of the edge
+    pub x: f32,                       // current x of the edge 
     pub x_step: f32,                  // how much to step on the x-axis everytime we step down on y-axis
     pub y_start: u32,                 // y-start of the edge
     pub y_end: u32,                   // y-end of the edge
     pub texcoords: Stepable<Vector4>, // texture-coordinate start and step values
-    pub one_over_z: Stepable<f32>,    // ...
-    pub depth: Stepable<f32>,         // ...
-    pub light_amp: Stepable<f32>,     // ...
+    pub one_over_z: Stepable<f32>,    // one-over-z start and step values
+    pub depth: Stepable<f32>,         // depth start and step values
+    pub light_amp: Stepable<f32>,     // light-amp start and step values
 }
 
 impl Edge {
@@ -64,13 +65,17 @@ impl Edge {
         let x_prestep = x - start.position.x;
 
         // construct steps with gradients with initial values
+        #[rustfmt::skip]
         let texcoords = Stepable::new(&gradients.texcoords, start_index, x_prestep, y_prestep, x_step);
+        #[rustfmt::skip]
         let one_over_z = Stepable::new(&gradients.one_over_z, start_index, x_prestep, y_prestep, x_step);
+        #[rustfmt::skip]
         let depth = Stepable::new(&gradients.depth, start_index, x_prestep, y_prestep, x_step);
+        #[rustfmt::skip]
         let light_amp = Stepable::new(&gradients.light_amt, start_index, x_prestep, y_prestep, x_step);
 
         // and finally return the newly constructed edge
-        Self {
+        return Self {
             x,
             x_step,
             y_start: (y_start as u32),
@@ -79,7 +84,7 @@ impl Edge {
             one_over_z,
             depth,
             light_amp,
-        }
+        };
     }
 
     pub fn step(&mut self) {
@@ -107,11 +112,18 @@ impl<T> Stepable<T>
 where
     T: AddAssign + Copy + Clone + Mul<f32, Output = T> + Add<T, Output = T>,
 {
-    pub fn new(gradient: &Gradient<T>, start_index: usize, x_prestep: f32, y_prestep: f32, x_step: f32) -> Self {
-        Self {
+    pub fn new(
+        gradient: &Gradient<T>,
+        start_index: usize,
+        x_prestep: f32,
+        y_prestep: f32,
+        x_step: f32,
+    ) -> Self {
+        return Self {
+            #[rustfmt::skip]
             value: gradient.value[start_index] + (gradient.step.x * x_prestep) + (gradient.step.y * y_prestep),
             step: gradient.step.y + gradient.step.x * x_step,
-        }
+        };
     }
 }
 

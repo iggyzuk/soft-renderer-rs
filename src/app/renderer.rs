@@ -53,7 +53,8 @@ impl Renderer {
         // renderer.debug.scanline_fill = true;
 
         renderer.clear_depth_buffer();
-        renderer
+
+        return renderer;
     }
 
     pub fn clear_depth_buffer(&mut self) {
@@ -72,10 +73,11 @@ impl Renderer {
     ) {
         let mvp = Matrix4::multiply(view_projection, transform);
 
-        let pos = Matrix4::multiply_vector(&mvp, transform.translation());
+        // # debug: show little white pixel at the top for this object
+        // let pos = Matrix4::multiply_vector(&mvp, transform.translation());
 
-        self.color_buffer
-            .set_pixel(pos.x as u32, pos.y as u32, &Color::WHITE);
+        // self.color_buffer
+        //     .set_pixel(pos.x as u32, pos.y as u32, &Color::WHITE);
 
         // @todo: run this in parallel, will need a RwLock for color/depth buffers
         for chunk in mesh.indices.chunks_exact(3) {
@@ -131,21 +133,20 @@ impl Renderer {
         // with perspective divide changes
         // L = Wb - B / (Wb - B) - (Wc - C)
         //
-        // note, we clip before perspective divide to avoid issues with linear interpolations
+        // note, we clip before perspective divide to avoid issues with linear interpolations / gradients
 
         let mut vertices = vec![v1, v2, v3];
 
-        // a list to store vertices while we're clipping
-        let mut aux = Vec::new();
-
-        // try clip vertices on all axis (x,y,z)
-        if !self.clip_polygon_axis(&mut vertices, &mut aux, 0) {
+        // try clip vertices x
+        if !self.clip_polygon_axis(&mut vertices, 0) {
             return;
         }
-        if !self.clip_polygon_axis(&mut vertices, &mut aux, 1) {
+        // try clip vertices y
+        if !self.clip_polygon_axis(&mut vertices, 1) {
             return;
         }
-        if !self.clip_polygon_axis(&mut vertices, &mut aux, 2) {
+        // try clip vertices z
+        if !self.clip_polygon_axis(&mut vertices, 2) {
             return;
         }
 
@@ -170,28 +171,34 @@ impl Renderer {
         }
     }
 
-    // @todo: try taking ownership of vertices
     // clips for one particular axis
-    fn clip_polygon_axis(
-        &self,
-        vertices: &mut Vec<Vertex>,
-        aux: &mut Vec<Vertex>,
-        component: usize,
-    ) -> bool {
+    fn clip_polygon_axis(&self, vertices: &mut Vec<Vertex>, component: usize) -> bool {
+        let mut new_vertices = Vec::new();
+
         // clip on specific component on the +w
-        // the result will be in aux
-        self.clip_polygon_component(vertices, component, 1.0, aux);
+        //
+        //          w (factor)
+        // prev v _ |
+        //  .       | -
+        //   .      |    - curr v
+        //    .     |  /
+        //     .    |/
+        //      .  /|
+        //          |
+
+        // the result will be in new_vertices
+        self.clip_polygon_component(vertices, component, 1.0, &mut new_vertices);
         vertices.clear();
 
-        // no aux-vertices so there are no vertices are in the screen
-        if aux.is_empty() {
+        // no new-vertices so there are no vertices are in the screen
+        if new_vertices.is_empty() {
             return false;
         }
 
         // clip on specific component on the -w
-        // the result will be in vertices
-        self.clip_polygon_component(aux, component, -1.0, vertices);
-        aux.clear();
+        // with the newly creates vertices the result will be in the original vertices list
+        self.clip_polygon_component(&mut new_vertices, component, -1.0, vertices);
+        new_vertices.clear();
 
         // return true when there are new vertices
         return !vertices.is_empty();
@@ -201,7 +208,7 @@ impl Renderer {
     fn clip_polygon_component(
         &self,
         vertices: &Vec<Vertex>,   // vertices to clip
-        index: usize,             // which component to clip on (x:0,y:1,z:2)
+        component_index: usize,   // which component to clip on (x:0,y:1,z:2)
         factor: f32,              // -w or +w
         result: &mut Vec<Vertex>, // resulting clipped vertices
     ) {
@@ -209,15 +216,17 @@ impl Renderer {
         // compare loop checks (prev-curr) v3-v1, v1-v2, v2->v3
         let mut prev_vertex = &vertices[vertices.len() - 1];
         // previous vertex component (x,y,z)
-        let mut prev_component = prev_vertex.get(index) * factor;
+        // factor allows us to reuse this code for -x and +x, (and -y +y, -z +z)
+        let mut prev_component = prev_vertex.get(component_index) * factor;
         // whether or not the previous vertex is inside the cliping range
         let mut prev_inside = prev_component <= prev_vertex.position.w;
 
         for curr_vertex in vertices {
-            let curr_component = curr_vertex.get(index) * factor;
+            let curr_component = curr_vertex.get(component_index) * factor;
             let curr_inside = curr_component <= curr_vertex.position.w;
 
-            // XOR if only one of the vertices is inside
+            // XOR if only one of the vertices is inside (current or previous)
+
             if curr_inside ^ prev_inside {
                 // find the lerp amount to clip the vertex
                 // L = Wb - B / (Wb - B) - (Wc - C)
@@ -579,7 +588,7 @@ impl Renderer {
         // # debug: draw wireframe
         // @todo: fix the pixel bleed on opposite edge
         if self.debug.wireframe {
-            let color = Color::newf(1.0, 1.0, 1.0, 0.3);
+            let color = Color::newf(1.0, 1.0, 1.0, 0.1);
             self.color_buffer.set_pixel(x_min, y, &color);
             self.color_buffer.set_pixel(x_max, y, &color);
         }

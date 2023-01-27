@@ -2,10 +2,11 @@ use std::rc::Rc;
 
 use crate::app::camera::Camera;
 use crate::app::instance::Instance;
-use crate::app::mesh_loader::MeshLoader;
+use crate::app::mesh_loader::load_mesh;
 use crate::app::renderer::Renderer;
 use crate::app::starfield::Starfield;
 use crate::graphics::mesh::Mesh;
+use crate::graphics::vertex::Vertex;
 use crate::graphics::{bitmap::Bitmap, color::Color};
 use crate::math::lerp;
 use crate::math::linear_algebra::{matrix::Matrix4, vector::Vector4};
@@ -52,7 +53,7 @@ impl World {
                 Vector4::new(0.0, -2.0, -2.0, 1.0),
                 Vector4::new(0.0, 0.0, -1.0, 0.0),
             ),
-            projection: Matrix4::perspective(100.0, aspect_ratio, 0.1, 1003.0),
+            projection: Matrix4::perspective(100.0, aspect_ratio, 0.1, 100.0),
             instances: Vec::new(),
             time: 0.0,
         };
@@ -71,7 +72,7 @@ impl World {
 
         let bitmap_resource = Rc::new(Box::new(bitmap));
 
-        let mario_mesh = MeshLoader::load("./assets/mario.obj");
+        let mario_mesh = load_mesh("./assets/mario.obj");
         let mario_mesh_resource = Rc::new(Box::new(mario_mesh));
 
         let mario_image = image::open("./assets/mario.png").unwrap();
@@ -88,16 +89,49 @@ impl World {
 
         world.instances.push(mario);
 
-        let box_mesh = Self::make_mesh_res("./assets/box.obj");
+        let box_mesh_res = Self::make_mesh_res("./assets/box.obj");
 
         // ground
-        let mut instance = world.make_instance(&box_mesh, &bitmap_resource, false);
+        let mut instance = world.make_instance(&box_mesh_res, &bitmap_resource, false);
         instance.transform.translate(0.0, -0.5, 0.0);
         instance.transform.scale(40.0, 0.5, 40.0);
         world.instances.push(instance);
 
         // simple box
-        let mut instance = world.make_instance(&box_mesh, &bitmap_resource, true);
+        // create a checker-board bitmap
+        let mut bitmap = Bitmap::new(8, 8);
+        for x in 0..bitmap.width {
+            for y in 0..bitmap.height {
+                let color = match (x + y) % 2 == 0 {
+                    true => Color::from_hex(0xFEDB00FF),
+                    false => Color::from_hex(0xFF9536FF),
+                };
+                bitmap.set_pixel(x, y, &color);
+            }
+        }
+        let bitmap_resource = Rc::new(Box::new(bitmap));
+        let triangle_mesh = Mesh::new(
+            vec![
+                Vertex::new(
+                    Vector4::new(-2.0, 0.0, 0.0, 1.0),
+                    Vector4::ZERO,
+                    Vector4::FORWARD,
+                ),
+                Vertex::new(
+                    Vector4::new(2.0, 0.0, 0.0, 1.0),
+                    Vector4::RIGHT,
+                    Vector4::FORWARD,
+                ),
+                Vertex::new(
+                    Vector4::new(0.0, 2.0, 0.0, 1.0),
+                    Vector4::ONE,
+                    Vector4::FORWARD,
+                ),
+            ],
+            vec![0, 1, 2],
+        );
+        let triangle_resource = Rc::new(Box::new(triangle_mesh));
+        let mut instance = world.make_instance(&triangle_resource, &bitmap_resource, true);
         instance.transform.translate(0.0, 1.0, 5.0);
         world.instances.push(instance);
 
@@ -154,18 +188,24 @@ impl World {
         return world;
     }
 
-    /// Update the `World` internal state; bounce the box around the screen.
     pub fn update(&mut self, dt: f32) {
         self.time += dt;
 
         self.camera.update(dt);
-        for instance in self.instances.iter_mut() {
-            instance
-                .transform
-                .translate(self.time.cos() * 0.01, 0.0, self.time.sin() * 0.01);
 
-            instance.transform.rotate_y(360.0 / 8.0 * dt);
-        }
+        // # example: set the ground bitmap to use the same pixels as what the renderer sees
+        let mut render_bitmap = Box::new(Bitmap::new(self.width, self.height));
+        render_bitmap.pixels = self.renderer.color_buffer.pixels.clone();
+        self.instances[1].bitmap = Rc::new(render_bitmap);
+
+        // # example: motion
+        // for instance in self.instances.iter_mut() {
+        //     instance
+        //         .transform
+        //         .translate(self.time.cos() * 0.01, 0.0, self.time.sin() * 0.01);
+
+        //     instance.transform.rotate_y(360.0 / 8.0 * dt);
+        // }
     }
 
     pub fn draw(&mut self, dt: f32) {
@@ -185,9 +225,8 @@ impl World {
             instance.draw(&mut self.renderer, &view_projection);
         }
 
-        let screenspace = Matrix4::screenspace(self.width as f32, self.height as f32);
-
         // # debug: draw all vertices
+        // let screenspace = Matrix4::screenspace(self.width as f32, self.height as f32);
         // for instance in self.instances.iter() {
         //     let mvp = Matrix4::multiply(&view_projection, &instance.transform);
         //     // dbg!(&self.camera.transform());
@@ -261,6 +300,28 @@ impl World {
         // }
         // sb.draw(&mut self.renderer.color_buffer);
 
+        // # shadow mapping experiment
+        let perspective =
+            Matrix4::perspective(100.0, self.width as f32 / self.height as f32, 0.1, 100.0);
+
+        let view_projection = Matrix4::multiply(&self.projection, &self.camera.transform());
+
+        // draw all instances
+        for instance in self.instances.iter() {
+            instance.draw(&mut self.renderer, &view_projection);
+        }
+
+        // # debug: show depth buffer
+        for x in 0..self.width / 4 {
+            for y in 0..self.height / 4 {
+                let index = (x * 4 + y * 4 * self.width) as usize;
+                let d = self.renderer.depth_buffer[index] as f32;
+                self.renderer
+                    .color_buffer
+                    .set_pixel(x, y, &Color::newf(d, d, d, 1.0))
+            }
+        }
+
         self.renderer.present();
     }
 
@@ -333,7 +394,7 @@ impl World {
     }
 
     pub fn make_mesh_res(path: &str) -> Rc<Box<Mesh>> {
-        let mesh = MeshLoader::load(path);
+        let mesh = load_mesh(path);
         Rc::new(Box::new(mesh))
     }
 
@@ -344,51 +405,3 @@ impl World {
         Rc::new(Box::new(bitmap))
     }
 }
-
-// const WIDTH: u32 = 640;
-// const HEIGHT: u32 = 480;
-// const BOX_SIZE: i16 = 64;
-
-// /// Representation of the application state. In this example, a box will bounce around the screen.
-// pub struct World {
-//     pub box_x: i16,
-//     pub box_y: i16,
-//     pub velocity_x: i16,
-//     pub velocity_y: i16,
-// }
-
-// /// Update the `World` internal state; bounce the box around the screen.
-// pub fn update(&mut self) {
-//     if self.box_x <= 0 || self.box_x + BOX_SIZE > WIDTH as i16 {
-//         self.velocity_x *= -1;
-//     }
-//     if self.box_y <= 0 || self.box_y + BOX_SIZE > HEIGHT as i16 {
-//         self.velocity_y *= -1;
-//     }
-
-//     self.box_x += self.velocity_x;
-//     self.box_y += self.velocity_y;
-// }
-
-// /// Draw the `World` state to the frame buffer.
-// ///
-// /// Assumes the default texture format: `wgpu::TextureFormat::Rgba8UnormSrgb`
-// pub fn draw(&self, frame: &mut [u8]) {
-//     for (i, pixel) in frame.chunks_exact_mut(4).enumerate() {
-//         let x = (i % WIDTH as usize) as i16;
-//         let y = (i / WIDTH as usize) as i16;
-
-//         let inside_the_box = x >= self.box_x
-//             && x < self.box_x + BOX_SIZE
-//             && y >= self.box_y
-//             && y < self.box_y + BOX_SIZE;
-
-//         let rgba = if inside_the_box {
-//             [0x5e, 0x48, 0xe8, 0xff]
-//         } else {
-//             [0x48, 0xb2, 0xe8, 0xff]
-//         };
-
-//         pixel.copy_from_slice(&rgba);
-//     }
-// }

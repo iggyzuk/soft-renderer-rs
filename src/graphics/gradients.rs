@@ -9,7 +9,7 @@ pub const LIGHT_DIR: Vector4 = Vector4 {
     x: 0.1,
     y: 0.6,
     z: 0.3,
-    w: 0.0,
+    w: 1.0,
 };
 
 #[derive(Debug)]
@@ -148,6 +148,6 @@ where
 
 impl Triangle {
     pub fn new(min: Vertex, mid: Vertex, max: Vertex) -> Self {
-        Self { min, mid, max }
+        return Self { min, mid, max };
     }
 }

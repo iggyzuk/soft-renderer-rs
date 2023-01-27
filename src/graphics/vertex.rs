@@ -9,11 +9,11 @@ pub struct Vertex {
 
 impl Vertex {
     pub fn new(position: Vector4, texcoords: Vector4, normal: Vector4) -> Self {
-        Self {
+        return Self {
             position,
             texcoords,
             normal,
-        }
+        };
     }
 
     pub fn transform(mut self, transform_mat: &Matrix4, normal_mat: &Matrix4) -> Self {
@@ -66,11 +66,11 @@ impl Vertex {
         )
     }
 
+    // clipping before perspective divide
+    //
     // -1 ≤ xp ≤ +1     x projected
     // -1 ≤ x/w ≤ +1    x projected is x divided by w (perspective divide)
-    // -w ≤ x ≤ +w      multiply both sides by w
-    //
-    // clipping before perspective divide
+    // -w ≤ x ≤ +w      multiply both sides by ws
     pub fn is_inside_view_frustum(&self) -> bool {
         return (self.position.x).abs() <= (self.position.w).abs()
             && (self.position.y).abs() <= (self.position.w).abs()

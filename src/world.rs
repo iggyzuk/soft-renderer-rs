@@ -27,7 +27,6 @@ pub enum WorldInputEvent {
     LookRight,
 }
 
-/// Representation of the application state. In this example, a box will bounce around the screen.
 pub struct World {
     width: u32,
     height: u32,
@@ -89,50 +88,20 @@ impl World {
 
         world.instances.push(mario);
 
-        let some_mesh = Self::make_mesh_res("./assets/box.obj");
+        let box_mesh = Self::make_mesh_res("./assets/box.obj");
 
-        let mut instance = world.make_instance(&some_mesh, &bitmap_resource, true);
+        // ground
+        let mut instance = world.make_instance(&box_mesh, &bitmap_resource, false);
         instance.transform.translate(0.0, -0.5, 0.0);
         instance.transform.scale(40.0, 0.5, 40.0);
         world.instances.push(instance);
 
-        let mut instance = world.make_instance(&some_mesh, &bitmap_resource, true);
-        instance.transform.translate(0.0, 1.0, 3.0);
+        // simple box
+        let mut instance = world.make_instance(&box_mesh, &bitmap_resource, true);
+        instance.transform.translate(0.0, 1.0, 5.0);
         world.instances.push(instance);
 
-        // let grid = 50;
-
-        // for x in -grid..grid {
-        //     for z in -grid..grid {
-        //         let mut instance = world.make_instance(&some_mesh, &bitmap_resource);
-        //         instance.transform.scale(0.02, 0.02, 0.02);
-        //         instance
-        //             .transform
-        //             .translate(x as f32 * 4.0, -0.5, z as f32 * 4.0);
-        //         world.instances.push(instance);
-        //     }
-        // }
-
-        // spawn a bunch of marios
-        // for x in 0..8 {
-        //     let mut instance = world.make_instance(&mario_mesh_resource, &mario_bitmap_resource);
-        //     instance.transform.scale(1.0, 1.0, 1.0);
-
-        //     let v = Vector4::new(
-        //         rand::thread_rng().gen_range(-1.0..1.0),
-        //         rand::thread_rng().gen_range(-1.0..1.0),
-        //         rand::thread_rng().gen_range(-1.0..1.0),
-        //         0.0,
-        //     );
-
-        //     let v = v.normalize() * 4.0;
-
-        //     instance.transform.translate(v.x, v.y, v.z);
-        //     world.instances.push(instance);
-        // }
-
-        // world.spawn_instance("./assets/turtle.obj", "./assets/turtle.png", 1.0);
-
+        // spawn some models
         world.spawn_instance(
             "./assets/car.obj",
             "./assets/car.png",
@@ -182,106 +151,7 @@ impl World {
         let instance = world.make_instance(&sky, &bitmap_resource, false);
         world.instances.push(instance);
 
-        // world.spawn_instance(
-        //     "./assets/land.obj",
-        //     "./assets/war.png",
-        //     Vector4::new(0.0, -1.0, 0.0, 0.0),
-        //     50.0,
-        // );
-
-        // world.spawn_instance("./assets/human.obj", "./assets/mario.png", 10.0);
-
-        // let turtle_mesh = MeshLoader::load("./assets/female.obj");
-        // let turtle_mesh_resource = Rc::new(Box::new(turtle_mesh));
-
-        // let turtle_image = image::open("./assets/turtle.png").unwrap();
-        // let mut turtle_bitmap = Bitmap::new(turtle_image.width(), turtle_image.height());
-        // turtle_bitmap.pixels = turtle_image.as_bytes().into();
-
-        // let turtle_bitmap_resource = Rc::new(Box::new(turtle_bitmap));
-
-        // let mut turtle = Instance::new(
-        //     Rc::clone(&turtle_mesh_resource),
-        //     Rc::clone(&turtle_bitmap_resource),
-        // );
-
-        // turtle.transform.translate(
-        //     rand::thread_rng().gen_range(-20.0..20.0),
-        //     rand::thread_rng().gen_range(-20.0..20.0),
-        //     rand::thread_rng().gen_range(-20.0..20.0),
-        // );
-
-        // world.instances.push(turtle);
-
-        // for _ in 0..30 {
-        //     // create a basic triangle mesh
-        //     // let mesh = Mesh::new(
-        //     //     vec![
-        //     //         Vertex::new(
-        //     //             Vector4::from_random(-5.0, 5.0),
-        //     //             Vector4::from_random(-5.0, 5.0),
-        //     //             Vector4::from_random(-5.0, 5.0),
-        //     //         ),
-        //     //         Vertex::new(
-        //     //             Vector4::from_random(-1.0, 1.0),
-        //     //             Vector4::from_random(-1.0, 1.0),
-        //     //             Vector4::from_random(-1.0, 1.0),
-        //     //         ),
-        //     //         Vertex::new(
-        //     //             Vector4::from_random(-1.0, 1.0),
-        //     //             Vector4::from_random(-1.0, 1.0),
-        //     //             Vector4::from_random(-1.0, 1.0),
-        //     //         ),
-        //     //     ],
-        //     //     vec![0, 1, 2],
-        //     // );
-
-        //     let mesh = Mesh::new(
-        //         vec![
-        //             Vertex::new(
-        //                 Vector4::from_xyz(-5.0, 0.0, 5.0),
-        //                 Vector4::from_xy(0.0, 0.0),
-        //                 Vector4::ONE,
-        //             ),
-        //             Vertex::new(
-        //                 Vector4::from_xy(5.0, 0.0),
-        //                 Vector4::from_xy(1.0, 0.0),
-        //                 Vector4::ONE,
-        //             ),
-        //             Vertex::new(
-        //                 Vector4::from_xyz(0.5, -5.0, -5.0),
-        //                 Vector4::from_xy(1.0, 1.0),
-        //                 Vector4::ONE,
-        //             ),
-        //         ],
-        //         vec![0, 2, 1],
-        //     );
-
-        //     let mesh_resource = Rc::new(Box::new(mesh));
-
-        //     let mut instance =
-        //         Instance::new(Rc::clone(&mesh_resource), Rc::clone(&bitmap_resource));
-
-        //     instance.transform.translate(
-        //         rand::thread_rng().gen_range(-20.0..20.0),
-        //         rand::thread_rng().gen_range(-20.0..20.0),
-        //         rand::thread_rng().gen_range(-20.0..20.0),
-        //     );
-
-        //     instance
-        //         .transform
-        //         .rotate_x(rand::thread_rng().gen_range(-180.0..180.0));
-        //     instance
-        //         .transform
-        //         .rotate_y(rand::thread_rng().gen_range(-180.0..180.0));
-        //     instance
-        //         .transform
-        //         .rotate_z(rand::thread_rng().gen_range(-180.0..180.0));
-
-        //     world.instances.push(instance);
-        // }
-
-        world
+        return world;
     }
 
     /// Update the `World` internal state; bounce the box around the screen.
@@ -289,45 +159,33 @@ impl World {
         self.time += dt;
 
         self.camera.update(dt);
-        // for instance in self.instances.iter_mut() {
-        //     // instance
-        //     //     .transform
-        //     //     .translate(self.time.cos() * 0.01, 0.0, self.time.sin() * 0.01);
+        for instance in self.instances.iter_mut() {
+            instance
+                .transform
+                .translate(self.time.cos() * 0.01, 0.0, self.time.sin() * 0.01);
 
-        //     instance.transform.rotate_y(360.0 / 8.0 * dt);
-        // }
+            instance.transform.rotate_y(360.0 / 8.0 * dt);
+        }
     }
 
-    /// Draw the `World` state to the frame buffer.
-    ///
-    /// Assumes the default texture format: `wgpu::TextureFormat::Rgba8UnormSrgb`
     pub fn draw(&mut self, dt: f32) {
+        // fill and clear buffers
         self.renderer
             .color_buffer
             .fill(&Color::newf(0.1, 0.1, 0.1, 1.0));
         self.renderer.clear_depth_buffer();
+
+        // # startfield:
         // self.starfield.render(&mut self.renderer.color_buffer, dt);
 
-        // calculate view projection matrix
-        // let mut m1 = Matrix4::new_identity();
-        // m1.translate(1.0, -2.0, -100.0);
-
         let view_projection = Matrix4::multiply(&self.projection, &self.camera.transform());
-        // let view_projection = &self.projection;
-
-        // log::info!("{:?}", self.instances.len());
-
-        let ss_mat = Matrix4::screenspace(self.width as f32, self.height as f32);
 
         // draw all instances
         for instance in self.instances.iter() {
             instance.draw(&mut self.renderer, &view_projection);
         }
 
-        // let identity = Matrix4::new_identity();
-        // dbg!(&self.projection);
-
-        // dbg!(&view_projection);
+        let screenspace = Matrix4::screenspace(self.width as f32, self.height as f32);
 
         // # debug: draw all vertices
         // for instance in self.instances.iter() {
@@ -396,7 +254,7 @@ impl World {
         //     }
         // }
 
-        // example: manual scan buffer triangle
+        // # example: manual scan buffer triangle
         // let mut sb = crate::graphics::scan_buffer::ScanBuffer::new();
         // for x in 0..100 {
         //     sb.push(100 - x, x + 100);

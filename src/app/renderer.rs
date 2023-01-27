@@ -1,5 +1,5 @@
 use pixels::Pixels;
-use std::{mem};
+use std::mem;
 
 use crate::{
     graphics::{
@@ -25,12 +25,11 @@ pub struct Debug {
 
 #[derive(Debug)]
 pub struct Renderer {
-    pub width: u32,  // width in pixels
-    pub height: u32, // height in pixels
-    pub screenspace: Matrix4,
-    pub color_buffer: Bitmap, // the main color buffer (r,g,b,a)
-    // @todo: could be an array/slice
-    pub depth_buffer: Vec<f32>, // the z buffer (1 - 0) -> (far - close)
+    pub width: u32,             // width in pixels
+    pub height: u32,            // height in pixels
+    pub screenspace: Matrix4,   // screen-space matrix for rasterizing
+    pub color_buffer: Bitmap,   // the main color buffer (r,g,b,a)
+    pub depth_buffer: Vec<f32>, // the z buffer (1 - 0) -> (far - close)     // @todo: could be an array/slice
     pub pixels: Pixels,         // pixels to that are actually drawn to the screen
     pub debug: Debug,           // debug variables for displaying extra information
 }
@@ -64,12 +63,19 @@ impl Renderer {
         }
     }
 
-    pub fn draw_mesh(&mut self, mesh: &Mesh, view_projection: &Matrix4, transform: &Matrix4, material: &Material) {
+    pub fn draw_mesh(
+        &mut self,
+        mesh: &Mesh,
+        view_projection: &Matrix4,
+        transform: &Matrix4,
+        material: &Material,
+    ) {
         let mvp = Matrix4::multiply(view_projection, transform);
 
         let pos = Matrix4::multiply_vector(&mvp, transform.translation());
 
-        self.color_buffer.set_pixel(pos.x as u32, pos.y as u32, &Color::WHITE);
+        self.color_buffer
+            .set_pixel(pos.x as u32, pos.y as u32, &Color::WHITE);
 
         // @todo: run this in parallel, will need a RwLock for color/depth buffers
         for chunk in mesh.indices.chunks_exact(3) {
@@ -132,9 +138,6 @@ impl Renderer {
         // a list to store vertices while we're clipping
         let mut aux = Vec::new();
 
-        // println!("triangle");
-        // fails here...
-
         // try clip vertices on all axis (x,y,z)
         if !self.clip_polygon_axis(&mut vertices, &mut aux, 0) {
             return;
@@ -169,7 +172,12 @@ impl Renderer {
 
     // @todo: try taking ownership of vertices
     // clips for one particular axis
-    fn clip_polygon_axis(&self, vertices: &mut Vec<Vertex>, aux: &mut Vec<Vertex>, component: usize) -> bool {
+    fn clip_polygon_axis(
+        &self,
+        vertices: &mut Vec<Vertex>,
+        aux: &mut Vec<Vertex>,
+        component: usize,
+    ) -> bool {
         // clip on specific component on the +w
         // the result will be in aux
         self.clip_polygon_component(vertices, component, 1.0, aux);
@@ -245,9 +253,15 @@ impl Renderer {
         //     / |
         //   -1 -1
 
-        let mut min = v1.transform(&self.screenspace, &identity).perspective_divide();
-        let mut mid = v2.transform(&self.screenspace, &identity).perspective_divide();
-        let mut max = v3.transform(&self.screenspace, &identity).perspective_divide();
+        let mut min = v1
+            .transform(&self.screenspace, &identity)
+            .perspective_divide();
+        let mut mid = v2
+            .transform(&self.screenspace, &identity)
+            .perspective_divide();
+        let mut max = v3
+            .transform(&self.screenspace, &identity)
+            .perspective_divide();
 
         // back face culling
         // cross product: min->max and min->min will give us the handedness: right > 0 and left < 0
@@ -310,7 +324,14 @@ impl Renderer {
         self.scan_triangle(min, mid, max, handedness, material);
     }
 
-    pub fn scan_triangle(&mut self, min: Vertex, mid: Vertex, max: Vertex, handedness: bool, material: &Material) {
+    pub fn scan_triangle(
+        &mut self,
+        min: Vertex,
+        mid: Vertex,
+        max: Vertex,
+        handedness: bool,
+        material: &Material,
+    ) {
         // construct gradients for the triangle
         // it contains tex-coords, one-over-z, depth, light-amt for all 3 vertices
         let gradients = Gradients::new(Triangle::new(min.clone(), mid.clone(), max.clone()));
@@ -355,7 +376,13 @@ impl Renderer {
         //     .
         //      max
 
-        self.scan_edges(&gradients, &mut min_to_max, &mut min_to_mid, handedness, &material);
+        self.scan_edges(
+            &gradients,
+            &mut min_to_max,
+            &mut min_to_mid,
+            handedness,
+            &material,
+        );
 
         // second half of the triangle (after the mid vertex)
         //
@@ -366,10 +393,23 @@ impl Renderer {
         //     .-.
         //      max
 
-        self.scan_edges(&gradients, &mut min_to_max, &mut mid_to_max, handedness, &material);
+        self.scan_edges(
+            &gradients,
+            &mut min_to_max,
+            &mut mid_to_max,
+            handedness,
+            &material,
+        );
     }
 
-    pub fn scan_edges(&mut self, gradients: &Gradients, edge_a: &mut Edge, edge_b: &mut Edge, handedness: bool, material: &Material) {
+    pub fn scan_edges(
+        &mut self,
+        gradients: &Gradients,
+        edge_a: &mut Edge,
+        edge_b: &mut Edge,
+        handedness: bool,
+        material: &Material,
+    ) {
         // all edges must be draw from left to right
         let mut left = edge_a;
         let mut right = edge_b;
@@ -442,7 +482,14 @@ impl Renderer {
     //     0.0
     // }
 
-    pub fn draw_scan_line(&mut self, gradients: &Gradients, left: &Edge, right: &Edge, y: u32, material: &Material) {
+    pub fn draw_scan_line(
+        &mut self,
+        gradients: &Gradients,
+        left: &Edge,
+        right: &Edge,
+        y: u32,
+        material: &Material,
+    ) {
         // fill convention: if the pixel center is inside the shape it's drawn, otherwise it isn't
         let x_min = left.x.ceil() as u32;
         let x_max = right.x.ceil() as u32; // not inclusive so ceil is fine
@@ -507,7 +554,11 @@ impl Renderer {
 
             // # debug: draw the depth buffer
             if self.debug.depth {
-                self.color_buffer.set_pixel(x as u32, y, &Color::newf(depth, depth, 1.0 - depth, 0.5));
+                self.color_buffer.set_pixel(
+                    x as u32,
+                    y,
+                    &Color::newf(depth, depth, 1.0 - depth, 0.5),
+                );
             }
 
             // # debug: draw dithered fill over the shape
@@ -527,11 +578,11 @@ impl Renderer {
 
         // # debug: draw wireframe
         // @todo: fix the pixel bleed on opposite edge
-        // if self.debug.wireframe {
-        //     let color = Color::newf(1.0, 1.0, 1.0, 0.3);
-        //     self.color_buffer.set_pixel(x_min, y, &color);
-        //     self.color_buffer.set_pixel(x_max, y, &color);
-        // }
+        if self.debug.wireframe {
+            let color = Color::newf(1.0, 1.0, 1.0, 0.3);
+            self.color_buffer.set_pixel(x_min, y, &color);
+            self.color_buffer.set_pixel(x_max, y, &color);
+        }
     }
 
     // todo: remove: instead have the renderer return the color buffer

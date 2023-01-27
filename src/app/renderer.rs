@@ -1,5 +1,5 @@
 use pixels::Pixels;
-use std::{mem, rc::Rc};
+use std::{mem};
 
 use crate::{
     graphics::{

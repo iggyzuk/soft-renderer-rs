@@ -15,14 +15,12 @@ mod graphics;
 mod math;
 mod world;
 
-const WIDTH: u32 = 1280;
+const WIDTH: u32 = 1080;
 const HEIGHT: u32 = 720;
 const RESOLUTION: u32 = 2;
 
 fn main() {
     simple_logger::init_with_level(log::Level::Info).unwrap();
-
-    log::info!("starting...");
 
     let event_loop = EventLoop::new();
 

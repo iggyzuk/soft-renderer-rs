@@ -9,11 +9,16 @@ pub struct Vertex {
 
 impl Vertex {
     pub fn new(position: Vector4, texcoords: Vector4, normal: Vector4) -> Self {
-        Self { position, texcoords, normal }
+        Self {
+            position,
+            texcoords,
+            normal,
+        }
     }
 
     pub fn transform(mut self, transform_mat: &Matrix4, normal_mat: &Matrix4) -> Self {
         self.position = Matrix4::multiply_vector(transform_mat, self.position);
+        // for light direction
         self.normal = Matrix4::multiply_vector(normal_mat, self.normal);
         self
     }
@@ -67,9 +72,9 @@ impl Vertex {
     //
     // clipping before perspective divide
     pub fn is_inside_view_frustum(&self) -> bool {
-        (self.position.x).abs() <= (self.position.w).abs()
+        return (self.position.x).abs() <= (self.position.w).abs()
             && (self.position.y).abs() <= (self.position.w).abs()
-            && (self.position.z).abs() <= (self.position.w).abs()
+            && (self.position.z).abs() <= (self.position.w).abs();
     }
 
     pub fn get(&self, index: usize) -> f32 {
@@ -80,5 +85,28 @@ impl Vertex {
             3 => self.position.w,
             _ => panic!("vertex has no index: ({})", index),
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_view_frustum() {
+        // in view
+        let v1 = Vertex::new(Vector4::ZERO, Vector4::ZERO, Vector4::ONE);
+        assert!(v1.is_inside_view_frustum());
+
+        let high_w = Vector4::new(-1.0, 1.0, -1.0, 2.0);
+
+        let v1 = Vertex::new(high_w, Vector4::ZERO, Vector4::ONE);
+        assert!(v1.is_inside_view_frustum());
+
+        // not in view
+        let low_w = Vector4::new(1.0, -1.0, 1.0, 0.5);
+
+        let v1 = Vertex::new(low_w, Vector4::ZERO, Vector4::ONE);
+        assert!(!v1.is_inside_view_frustum());
     }
 }

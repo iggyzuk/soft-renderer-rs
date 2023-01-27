@@ -6,8 +6,8 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [features]
-optimize = ["log/release_max_level_warn"]
-default = ["optimize"]
+# optimize = ["log/release_max_level_warn"]
+# default = ["optimize"]
 
 [dependencies]
 # egui = "0.20"

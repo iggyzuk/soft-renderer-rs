@@ -131,9 +131,9 @@ impl Matrix4 {
     }
 
     pub fn look_at(&mut self, eye: Vector4, target: Vector4, up_axis: Vector4) {
-        let forward = (target - eye).normalize();
-        let right = up_axis.cross(forward).normalize();
-        let up = forward.cross(right).normalize();
+        let forward = (target - eye).normalized();
+        let right = up_axis.cross(forward).normalized();
+        let up = forward.cross(right).normalized();
 
         let mut m = Self::new_identity();
 
@@ -149,9 +149,10 @@ impl Matrix4 {
         m[1][2] = forward.y;
         m[2][2] = forward.z;
 
-        m.translate(-eye.x, -eye.y, -eye.z);
+        // @todo: why not -eye?
+        m.translate(eye.x, eye.y, eye.z);
 
-        self.matrix = Self::multiply(self, &m).matrix;
+        self.matrix = *Self::multiply(self, &m);
     }
 
     // @todo: figure out how to do M * M
@@ -159,10 +160,13 @@ impl Matrix4 {
         let mut result = Self::new();
         for i in 0..4 {
             for j in 0..4 {
-                result[i][j] = lhs[0][j] * rhs[i][0] + lhs[1][j] * rhs[i][1] + lhs[2][j] * rhs[i][2] + lhs[3][j] * rhs[i][3];
+                result[i][j] = lhs[0][j] * rhs[i][0]
+                    + lhs[1][j] * rhs[i][1]
+                    + lhs[2][j] * rhs[i][2]
+                    + lhs[3][j] * rhs[i][3];
             }
         }
-        result
+        return result;
     }
 
     // @todo: figure out how to do M * V
@@ -171,7 +175,7 @@ impl Matrix4 {
         for i in 0..4 {
             a[i] = lhs[0][i] * rhs.x + lhs[1][i] * rhs.y + lhs[2][i] * rhs.z + lhs[3][i] * rhs.w;
         }
-        Vector4::new(a[0], a[1], a[2], a[3])
+        return Vector4::new(a[0], a[1], a[2], a[3]);
     }
 
     pub fn translate(&mut self, x: f32, y: f32, z: f32) {
@@ -181,7 +185,7 @@ impl Matrix4 {
         m[3][1] = y;
         m[3][2] = z;
 
-        self.matrix = Self::multiply(self, &m).matrix;
+        self.matrix = *Self::multiply(self, &m);
     }
 
     pub fn rotate_x(&mut self, angle: f32) {
@@ -195,7 +199,7 @@ impl Matrix4 {
         m[1][2] = sinus;
         m[2][1] = -sinus;
 
-        self.matrix = Self::multiply(self, &m).matrix;
+        self.matrix = *Self::multiply(self, &m);
     }
 
     pub fn rotate_y(&mut self, angle: f32) {
@@ -209,7 +213,7 @@ impl Matrix4 {
         m[0][2] = -sinus;
         m[2][0] = sinus;
 
-        self.matrix = Self::multiply(self, &m).matrix;
+        self.matrix = *Self::multiply(self, &m);
     }
 
     pub fn rotate_z(&mut self, angle: f32) {
@@ -223,102 +227,139 @@ impl Matrix4 {
         m[0][1] = sinus;
         m[1][0] = -sinus;
 
-        self.matrix = Self::multiply(self, &m).matrix;
+        self.matrix = *Self::multiply(self, &m);
     }
 
     pub fn scale(&mut self, x: f32, y: f32, z: f32) {
         let mut m = Self::new_identity();
+
         m[0][0] = x;
         m[1][1] = y;
         m[2][2] = z;
-        self.matrix = Self::multiply(self, &m).matrix;
+
+        self.matrix = *Self::multiply(self, &m);
     }
 
     pub fn invert(&mut self) -> bool {
         let mut inv = Self::new();
 
-        inv[0][0] = self[1][1] * self[2][2] * self[3][3] - self[1][1] * self[3][2] * self[2][3] - self[1][2] * self[2][1] * self[3][3]
+        inv[0][0] = self[1][1] * self[2][2] * self[3][3]
+            - self[1][1] * self[3][2] * self[2][3]
+            - self[1][2] * self[2][1] * self[3][3]
             + self[1][2] * self[3][1] * self[2][3]
             + self[1][3] * self[2][1] * self[3][2]
             - self[1][3] * self[3][1] * self[2][2];
 
-        inv[0][1] = -self[0][1] * self[2][2] * self[3][3] + self[0][1] * self[3][2] * self[2][3] + self[0][2] * self[2][1] * self[3][3]
+        inv[0][1] = -self[0][1] * self[2][2] * self[3][3]
+            + self[0][1] * self[3][2] * self[2][3]
+            + self[0][2] * self[2][1] * self[3][3]
             - self[0][2] * self[3][1] * self[2][3]
             - self[0][3] * self[2][1] * self[3][2]
             + self[0][3] * self[3][1] * self[2][2];
 
-        inv[0][2] = self[0][1] * self[1][2] * self[3][3] - self[0][1] * self[3][2] * self[1][3] - self[0][2] * self[1][1] * self[3][3]
+        inv[0][2] = self[0][1] * self[1][2] * self[3][3]
+            - self[0][1] * self[3][2] * self[1][3]
+            - self[0][2] * self[1][1] * self[3][3]
             + self[0][2] * self[3][1] * self[1][3]
             + self[0][3] * self[1][1] * self[3][2]
             - self[0][3] * self[3][1] * self[1][2];
 
-        inv[0][3] = -self[0][1] * self[1][2] * self[2][3] + self[0][1] * self[2][2] * self[1][3] + self[0][2] * self[1][1] * self[2][3]
+        inv[0][3] = -self[0][1] * self[1][2] * self[2][3]
+            + self[0][1] * self[2][2] * self[1][3]
+            + self[0][2] * self[1][1] * self[2][3]
             - self[0][2] * self[2][1] * self[1][3]
             - self[0][3] * self[1][1] * self[2][2]
             + self[0][3] * self[2][1] * self[1][2];
 
-        inv[1][0] = -self[1][0] * self[2][2] * self[3][3] + self[1][0] * self[3][2] * self[2][3] + self[1][2] * self[2][0] * self[3][3]
+        inv[1][0] = -self[1][0] * self[2][2] * self[3][3]
+            + self[1][0] * self[3][2] * self[2][3]
+            + self[1][2] * self[2][0] * self[3][3]
             - self[1][2] * self[3][0] * self[2][3]
             - self[1][3] * self[2][0] * self[3][2]
             + self[1][3] * self[3][0] * self[2][2];
 
-        inv[1][1] = self[0][0] * self[2][2] * self[3][3] - self[0][0] * self[3][2] * self[2][3] - self[0][2] * self[2][0] * self[3][3]
+        inv[1][1] = self[0][0] * self[2][2] * self[3][3]
+            - self[0][0] * self[3][2] * self[2][3]
+            - self[0][2] * self[2][0] * self[3][3]
             + self[0][2] * self[3][0] * self[2][3]
             + self[0][3] * self[2][0] * self[3][2]
             - self[0][3] * self[3][0] * self[2][2];
 
-        inv[1][2] = -self[0][0] * self[1][2] * self[3][3] + self[0][0] * self[3][2] * self[1][3] + self[0][2] * self[1][0] * self[3][3]
+        inv[1][2] = -self[0][0] * self[1][2] * self[3][3]
+            + self[0][0] * self[3][2] * self[1][3]
+            + self[0][2] * self[1][0] * self[3][3]
             - self[0][2] * self[3][0] * self[1][3]
             - self[0][3] * self[1][0] * self[3][2]
             + self[0][3] * self[3][0] * self[1][2];
 
-        inv[1][3] = self[0][0] * self[1][2] * self[2][3] - self[0][0] * self[2][2] * self[1][3] - self[0][2] * self[1][0] * self[2][3]
+        inv[1][3] = self[0][0] * self[1][2] * self[2][3]
+            - self[0][0] * self[2][2] * self[1][3]
+            - self[0][2] * self[1][0] * self[2][3]
             + self[0][2] * self[2][0] * self[1][3]
             + self[0][3] * self[1][0] * self[2][2]
             - self[0][3] * self[2][0] * self[1][2];
 
-        inv[2][0] = self[1][0] * self[2][1] * self[3][3] - self[1][0] * self[3][1] * self[2][3] - self[1][1] * self[2][0] * self[3][3]
+        inv[2][0] = self[1][0] * self[2][1] * self[3][3]
+            - self[1][0] * self[3][1] * self[2][3]
+            - self[1][1] * self[2][0] * self[3][3]
             + self[1][1] * self[3][0] * self[2][3]
             + self[1][3] * self[2][0] * self[3][1]
             - self[1][3] * self[3][0] * self[2][1];
 
-        inv[2][1] = -self[0][0] * self[2][1] * self[3][3] + self[0][0] * self[3][1] * self[2][3] + self[0][1] * self[2][0] * self[3][3]
+        inv[2][1] = -self[0][0] * self[2][1] * self[3][3]
+            + self[0][0] * self[3][1] * self[2][3]
+            + self[0][1] * self[2][0] * self[3][3]
             - self[0][1] * self[3][0] * self[2][3]
             - self[0][3] * self[2][0] * self[3][1]
             + self[0][3] * self[3][0] * self[2][1];
 
-        inv[2][2] = self[0][0] * self[1][1] * self[3][3] - self[0][0] * self[3][1] * self[1][3] - self[0][1] * self[1][0] * self[3][3]
+        inv[2][2] = self[0][0] * self[1][1] * self[3][3]
+            - self[0][0] * self[3][1] * self[1][3]
+            - self[0][1] * self[1][0] * self[3][3]
             + self[0][1] * self[3][0] * self[1][3]
             + self[0][3] * self[1][0] * self[3][1]
             - self[0][3] * self[3][0] * self[1][1];
 
-        inv[2][3] = -self[0][0] * self[1][1] * self[2][3] + self[0][0] * self[2][1] * self[1][3] + self[0][1] * self[1][0] * self[2][3]
+        inv[2][3] = -self[0][0] * self[1][1] * self[2][3]
+            + self[0][0] * self[2][1] * self[1][3]
+            + self[0][1] * self[1][0] * self[2][3]
             - self[0][1] * self[2][0] * self[1][3]
             - self[0][3] * self[1][0] * self[2][1]
             + self[0][3] * self[2][0] * self[1][1];
 
-        inv[3][0] = -self[1][0] * self[2][1] * self[3][2] + self[1][0] * self[3][1] * self[2][2] + self[1][1] * self[2][0] * self[3][2]
+        inv[3][0] = -self[1][0] * self[2][1] * self[3][2]
+            + self[1][0] * self[3][1] * self[2][2]
+            + self[1][1] * self[2][0] * self[3][2]
             - self[1][1] * self[3][0] * self[2][2]
             - self[1][2] * self[2][0] * self[3][1]
             + self[1][2] * self[3][0] * self[2][1];
 
-        inv[3][1] = self[0][0] * self[2][1] * self[3][2] - self[0][0] * self[3][1] * self[2][2] - self[0][1] * self[2][0] * self[3][2]
+        inv[3][1] = self[0][0] * self[2][1] * self[3][2]
+            - self[0][0] * self[3][1] * self[2][2]
+            - self[0][1] * self[2][0] * self[3][2]
             + self[0][1] * self[3][0] * self[2][2]
             + self[0][2] * self[2][0] * self[3][1]
             - self[0][2] * self[3][0] * self[2][1];
 
-        inv[3][2] = -self[0][0] * self[1][1] * self[3][2] + self[0][0] * self[3][1] * self[1][2] + self[0][1] * self[1][0] * self[3][2]
+        inv[3][2] = -self[0][0] * self[1][1] * self[3][2]
+            + self[0][0] * self[3][1] * self[1][2]
+            + self[0][1] * self[1][0] * self[3][2]
             - self[0][1] * self[3][0] * self[1][2]
             - self[0][2] * self[1][0] * self[3][1]
             + self[0][2] * self[3][0] * self[1][1];
 
-        inv[3][3] = self[0][0] * self[1][1] * self[2][2] - self[0][0] * self[2][1] * self[1][2] - self[0][1] * self[1][0] * self[2][2]
+        inv[3][3] = self[0][0] * self[1][1] * self[2][2]
+            - self[0][0] * self[2][1] * self[1][2]
+            - self[0][1] * self[1][0] * self[2][2]
             + self[0][1] * self[2][0] * self[1][2]
             + self[0][2] * self[1][0] * self[2][1]
             - self[0][2] * self[2][0] * self[1][1];
 
         // find determinant and check if it's zero meaning matrix is not invertable
-        let mut det = self[0][0] * inv[0][0] + self[1][0] * inv[0][1] + self[2][0] * inv[0][2] + self[3][0] * inv[0][3];
+        let mut det = self[0][0] * inv[0][0]
+            + self[1][0] * inv[0][1]
+            + self[2][0] * inv[0][2]
+            + self[3][0] * inv[0][3];
 
         if det == 0.0 {
             return false;
@@ -337,7 +378,7 @@ impl Matrix4 {
 
     #[inline(always)]
     pub fn translation(&self) -> Vector4 {
-        Vector4::new(self[3][0], self[3][1], self[3][2], 1.0)
+        return Vector4::new(self[3][0], self[3][1], self[3][2], 1.0);
     }
 }
 
@@ -345,22 +386,26 @@ impl Deref for Matrix4 {
     type Target = [[f32; 4]; 4];
 
     fn deref(&self) -> &Self::Target {
-        &self.matrix
+        return &self.matrix;
     }
 }
 
 impl DerefMut for Matrix4 {
     fn deref_mut(&mut self) -> &mut Self::Target {
-        &mut self.matrix
+        return &mut self.matrix;
     }
 }
 
 impl Debug for Matrix4 {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         for i in 0..4 {
-            writeln!(f, "[{},{},{},{}]", self.matrix[0][i], self.matrix[1][0], self.matrix[2][i], self.matrix[3][i])?;
+            writeln!(
+                f,
+                "[{},{},{},{}]",
+                self.matrix[0][i], self.matrix[1][0], self.matrix[2][i], self.matrix[3][i]
+            )?;
         }
-        Ok(())
+        return Ok(());
     }
 }
 
@@ -375,3 +420,108 @@ impl Debug for Matrix4 {
 //         Vector4::new(a[0], a[1], a[2], a[3])
 //     }
 // }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_matrix_identity() {
+        let mut m = Matrix4::new();
+        m.identity();
+
+        assert_eq!(*m, *Matrix4::new_identity());
+
+        assert_eq!(m[0][0], 1.0);
+        assert_eq!(m[1][1], 1.0);
+        assert_eq!(m[2][2], 1.0);
+        assert_eq!(m[3][3], 1.0);
+
+        assert_eq!(m[1][0], 0.0);
+        assert_eq!(m[1][2], 0.0);
+        assert_eq!(m[2][1], 0.0);
+        assert_eq!(m[2][3], 0.0);
+        assert_eq!(m[3][2], 0.0);
+    }
+
+    #[test]
+    fn test_matrix_mult() {
+        let mut m1 = Matrix4::new_identity();
+
+        m1[0][0] = 2.0; // scale x
+        m1[1][1] = 3.0; // scale y
+        m1[2][2] = 4.0; // scale y
+
+        m1[3][0] = 5.0; // move x
+        m1[3][1] = 6.0; // move y
+        m1[3][2] = 7.0; // move z
+
+        let mut m2 = Matrix4::new_identity();
+
+        m2[0][0] = 8.0; // scale x
+        m2[1][1] = 9.0; // scale y
+        m2[2][2] = 10.0; // scale y
+
+        m2[3][0] = 11.0; // move x
+        m2[3][1] = 12.0; // move y
+        m2[3][2] = 13.0; // move z
+
+        // 2 0 0 5 | 8 0 0  11
+        // 0 3 0 6 | 0 9 0  12
+        // 0 0 4 7 | 0 0 10 13
+        // 0 0 0 1 | 0 0 0  1
+
+        let mut expect = Matrix4::new();
+        expect[0][0] = 16.0;
+        expect[1][1] = 27.0;
+        expect[2][2] = 40.0;
+
+        expect[3][0] = 27.0; // 11*2+5
+        expect[3][1] = 42.0; // 12*3+6
+        expect[3][2] = 59.0; // 13*4+7
+        expect[3][3] = 1.0;
+
+        assert_eq!(*Matrix4::multiply(&m1, &m2), *expect);
+    }
+
+    #[test]
+    fn test_matrix_mult_with_vector() {
+        let mut m1 = Matrix4::new_identity();
+
+        m1[0][0] = 2.0; // scale x
+        m1[1][1] = 3.0; // scale y
+        m1[2][2] = 4.0; // scale y
+
+        m1[3][0] = 5.0; // move x
+        m1[3][1] = 6.0; // move y
+        m1[3][2] = 7.0; // move z
+
+        let mut v1 = Vector4::new(2.0, 3.0, 4.0, 1.0);
+
+        assert_eq!(
+            Matrix4::multiply_vector(&m1, v1),
+            Vector4::new(9.0, 15.0, 23.0, 1.0),
+        );
+    }
+
+    #[test]
+    fn test_matrix_translation() {
+        let mut m1 = Matrix4::new_identity();
+
+        m1[3][0] = 5.0; // move x
+        m1[3][1] = 6.0; // move y
+        m1[3][2] = 7.0; // move z
+
+        let mut m2 = m1.clone();
+
+        assert_eq!(*m1, *m2);
+
+        m1.translate(10.0, 11.0, 12.0);
+
+        m2[3][0] = 15.0;
+        m2[3][1] = 17.0;
+        m2[3][2] = 19.0;
+
+        assert_eq!(*m1, *m2);
+    }
+}

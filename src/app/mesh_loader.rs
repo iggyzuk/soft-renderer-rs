@@ -60,21 +60,21 @@ impl MeshLoader {
                         tokens[1].parse::<f32>().unwrap(),
                         tokens[2].parse::<f32>().unwrap(),
                         tokens[3].parse::<f32>().unwrap(),
-                        0.0,
+                        1.0,
                     ));
                 } else if tokens[0] == "vt" {
                     model.tex_coords.push(Vector4::new(
                         tokens[1].parse::<f32>().unwrap(),
                         1.0 - tokens[2].parse::<f32>().unwrap(),
                         0.0,
-                        0.0,
+                        1.0,
                     ));
                 } else if tokens[0] == "vn" {
                     model.normals.push(Vector4::new(
                         tokens[1].parse::<f32>().unwrap(),
                         tokens[2].parse::<f32>().unwrap(),
                         tokens[3].parse::<f32>().unwrap(),
-                        0.0,
+                        1.0,
                     ));
                 } else if tokens[0] == "f" {
                     for i in 1..tokens.len() {
@@ -93,13 +93,14 @@ impl MeshLoader {
 
         let indexed_model = Self::to_indexed_model(model);
 
-        // log::info!("{:?}", indexed_model);
-
         let mut mesh = Mesh::default();
 
         for i in 0..indexed_model.vertices.len() {
-            mesh.vertices
-                .push(Vertex::new(indexed_model.vertices[i], indexed_model.tex_coords[i], indexed_model.normals[i]));
+            mesh.vertices.push(Vertex::new(
+                indexed_model.vertices[i],
+                indexed_model.tex_coords[i],
+                indexed_model.normals[i],
+            ));
         }
 
         mesh.indices = vec![0; indexed_model.indices.len()];
@@ -108,24 +109,7 @@ impl MeshLoader {
             mesh.indices[i] = indexed_model.indices[i];
         }
 
-        // Mesh(std::string filename) {
-        //     OBJLoader::IndexedModel model = OBJLoader::ToIndexedModel(OBJLoader::Load(filename));
-
-        //     for(uint i = 0; i < model.vertices.size(); ++i) {
-        //         vertices.push_back(Vertex( model.vertices[i],
-        //                                    model.texCoords[i],
-        //                                    model.normals[i] ));
-        //     }
-
-        //     indices.resize(model.indices.size());
-        //     for(uint j = 0; j < model.indices.size(); ++j) {
-        //         indices[j] = model.indices[j];
-        //     }
-        // }
-        // std::vector<Vertex> vertices;
-        // std::vector<uint> indices;
-
-        mesh
+        return mesh;
     }
 
     pub fn to_indexed_model(obj: OBJModel) -> IndexedModel {
@@ -167,6 +151,6 @@ impl MeshLoader {
             }
         }
 
-        model
+        return model;
     }
 }

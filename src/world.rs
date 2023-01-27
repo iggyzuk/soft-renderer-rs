@@ -49,8 +49,11 @@ impl World {
             height,
             starfield: Starfield::new(0, 0.1, 2.0),
             renderer: Renderer::new(width, height, pixels),
-            camera: Camera::new(Vector4::new(0.0, -2.0, -2.0, 1.0), Vector4::new(0.0, 0.0, -1.0, 0.0)),
-            projection: Matrix4::perspective(100.0, aspect_ratio, 0.1, 10.0),
+            camera: Camera::new(
+                Vector4::new(0.0, -2.0, -2.0, 1.0),
+                Vector4::new(0.0, 0.0, -1.0, 0.0),
+            ),
+            projection: Matrix4::perspective(100.0, aspect_ratio, 0.1, 1003.0),
             instances: Vec::new(),
             time: 0.0,
         };
@@ -78,7 +81,11 @@ impl World {
 
         let mario_bitmap_resource = Rc::new(Box::new(mario_bitmap));
 
-        let mario = Instance::new(Rc::clone(&mario_mesh_resource), Rc::clone(&mario_bitmap_resource), false);
+        let mario = Instance::new(
+            Rc::clone(&mario_mesh_resource),
+            Rc::clone(&mario_bitmap_resource),
+            false,
+        );
 
         world.instances.push(mario);
 
@@ -125,27 +132,42 @@ impl World {
         // }
 
         // world.spawn_instance("./assets/turtle.obj", "./assets/turtle.png", 1.0);
-        // world.spawn_instance("./assets/car.obj", "./assets/car.png", Vector4::new(3.5, 0.0, 0.0, 0.0), -60.0, 1.0, true);
 
-        // world.spawn_instance("./assets/ghoul.obj", "./assets/ghoul.png", Vector4::new(-3.5, 0.0, 1.0, 0.0), 60.0, 1.0, true);
+        world.spawn_instance(
+            "./assets/car.obj",
+            "./assets/car.png",
+            Vector4::new(3.5, 0.0, 0.0, 0.0),
+            -60.0,
+            1.0,
+            true,
+        );
 
-        // world.spawn_instance(
-        //     "./assets/house.obj",
-        //     "./assets/house.png",
-        //     Vector4::new(-10.0, 0.0, -10.0, 0.0),
-        //     30.0,
-        //     1.0,
-        //     true,
-        // );
+        world.spawn_instance(
+            "./assets/ghoul.obj",
+            "./assets/ghoul.png",
+            Vector4::new(-3.5, 0.0, 1.0, 0.0),
+            60.0,
+            1.0,
+            true,
+        );
 
-        // world.spawn_instance(
-        //     "./assets/plane.obj",
-        //     "./assets/plane.png",
-        //     Vector4::new(10.0, 6.0, -10.0, 0.0),
-        //     -130.0,
-        //     1.0,
-        //     true,
-        // );
+        world.spawn_instance(
+            "./assets/house.obj",
+            "./assets/house.png",
+            Vector4::new(-10.0, 0.0, -10.0, 0.0),
+            30.0,
+            1.0,
+            true,
+        );
+
+        world.spawn_instance(
+            "./assets/plane.obj",
+            "./assets/plane.png",
+            Vector4::new(10.0, 6.0, -10.0, 0.0),
+            -130.0,
+            1.0,
+            true,
+        );
 
         // create a sky bitmap
         let mut bitmap = Bitmap::new(1, 128);
@@ -280,7 +302,9 @@ impl World {
     ///
     /// Assumes the default texture format: `wgpu::TextureFormat::Rgba8UnormSrgb`
     pub fn draw(&mut self, dt: f32) {
-        self.renderer.color_buffer.fill(&Color::newf(0.1, 0.1, 0.1, 1.0));
+        self.renderer
+            .color_buffer
+            .fill(&Color::newf(0.1, 0.1, 0.1, 1.0));
         self.renderer.clear_depth_buffer();
         // self.starfield.render(&mut self.renderer.color_buffer, dt);
 
@@ -303,76 +327,81 @@ impl World {
         // let identity = Matrix4::new_identity();
         // dbg!(&self.projection);
 
-        dbg!(&view_projection);
+        // dbg!(&view_projection);
 
         // # debug: draw all vertices
-        for instance in self.instances.iter() {
-            let mvp = Matrix4::multiply(&view_projection, &instance.transform);
-            let identity = Matrix4::new_identity();
-            dbg!(&mvp);
-            for v in instance.mesh.vertices.iter() {
-                let new_vertex = v.transform(&mvp, &identity);
+        // for instance in self.instances.iter() {
+        //     let mvp = Matrix4::multiply(&view_projection, &instance.transform);
+        //     // dbg!(&self.camera.transform());
+        //     let identity = Matrix4::new_identity();
+        //     // dbg!(&mvp);
+        //     for v in instance.mesh.vertices.iter() {
+        //         let new_vertex = v.transform(&mvp, &identity);
 
-                // @todo: fix here
-                // all vertices say that they are outside of the frustum!
-                // if !new_vertex.is_inside_view_frustum() {
-                //     continue;
-                // }
+        //         // @todo: fix here
+        //         // all vertices say that they are outside of the frustum!
+        //         if !new_vertex.is_inside_view_frustum() {
+        //             continue;
+        //         }
 
-                // it's not the perspective divide! it happens later... ->
-                let ss_pos = new_vertex.transform(&ss_mat, &identity).perspective_divide();
+        //         // it's not the perspective divide! it happens later... ->
+        //         let ss_pos = new_vertex
+        //             .transform(&ss_mat, &identity)
+        //             .perspective_divide();
 
-                self.renderer
-                    .color_buffer
-                    .set_pixel(ss_pos.position.x as u32, ss_pos.position.y as u32, &Color::from_hex(0xFFFFFF55));
+        //         self.renderer.color_buffer.set_pixel(
+        //             ss_pos.position.x as u32,
+        //             ss_pos.position.y as u32,
+        //             &Color::from_hex(0xFFFFFF55),
+        //         );
 
-                // let color = Color::from_hex(0xFFFFFF55);
-                // for i in -1..=1 {
-                //     self.renderer.color_buffer.set_pixel(
-                //         (ss_pos.position.x as i32 + i) as u32,
-                //         (ss_pos.position.y as i32 + i) as u32,
-                //         &color,
-                //     );
+        //         // let color = Color::from_hex(0xFFFFFF55);
+        //         // for i in -1..=1 {
+        //         //     self.renderer.color_buffer.set_pixel(
+        //         //         (ss_pos.position.x as i32 + i) as u32,
+        //         //         (ss_pos.position.y as i32 + i) as u32,
+        //         //         &color,
+        //         //     );
 
-                //     self.renderer.color_buffer.set_pixel(
-                //         (ss_pos.position.x as i32 - i) as u32,
-                //         (ss_pos.position.y as i32 + i) as u32,
-                //         &color,
-                //     );
-                // }
+        //         //     self.renderer.color_buffer.set_pixel(
+        //         //         (ss_pos.position.x as i32 - i) as u32,
+        //         //         (ss_pos.position.y as i32 + i) as u32,
+        //         //         &color,
+        //         //     );
+        //         // }
 
-                // self.renderer.color_buffer.set_pixel(
-                //     ss_pos.position.x as u32,
-                //     ss_pos.position.y as u32,
-                //     &Color::from_hex(0xFFFFFFAA),
-                // );
+        //         // self.renderer.color_buffer.set_pixel(
+        //         //     ss_pos.position.x as u32,
+        //         //     ss_pos.position.y as u32,
+        //         //     &Color::from_hex(0xFFFFFFAA),
+        //         // );
 
-                // for i in 1..=5 {
-                //     self.renderer.color_buffer.set_pixel(
-                //         ss_pos.position.x as u32 + i as u32,
-                //         ss_pos.position.y as u32 as u32,
-                //         &Color::from_hex(0xFF0000AA),
-                //     );
-                //     self.renderer.color_buffer.set_pixel(
-                //         ss_pos.position.x as u32 as u32,
-                //         ss_pos.position.y as u32 - i as u32,
-                //         &Color::from_hex(0x00FF00AA),
-                //     );
-                //     self.renderer.color_buffer.set_pixel(
-                //         ss_pos.position.x as u32 + i as u32,
-                //         ss_pos.position.y as u32 - i as u32,
-                //         &Color::from_hex(0x0000FFAA),
-                //     );
-                // }
-            }
-        }
+        //         // for i in 1..=5 {
+        //         //     self.renderer.color_buffer.set_pixel(
+        //         //         ss_pos.position.x as u32 + i as u32,
+        //         //         ss_pos.position.y as u32 as u32,
+        //         //         &Color::from_hex(0xFF0000AA),
+        //         //     );
+        //         //     self.renderer.color_buffer.set_pixel(
+        //         //         ss_pos.position.x as u32 as u32,
+        //         //         ss_pos.position.y as u32 - i as u32,
+        //         //         &Color::from_hex(0x00FF00AA),
+        //         //     );
+        //         //     self.renderer.color_buffer.set_pixel(
+        //         //         ss_pos.position.x as u32 + i as u32,
+        //         //         ss_pos.position.y as u32 - i as u32,
+        //         //         &Color::from_hex(0x0000FFAA),
+        //         //     );
+        //         // }
+        //     }
+        // }
 
         // example: manual scan buffer triangle
-        let mut sb = crate::graphics::scan_buffer::ScanBuffer::new();
-        for x in 0..100 {
-            sb.push(100 - x, x + 100);
-        }
-        sb.draw(&mut self.renderer.color_buffer);
+        // let mut sb = crate::graphics::scan_buffer::ScanBuffer::new();
+        // for x in 0..100 {
+        //     sb.push(100 - x, x + 100);
+        // }
+        // sb.draw(&mut self.renderer.color_buffer);
 
         self.renderer.present();
     }
@@ -415,7 +444,15 @@ impl World {
         self.instances.push(instance);
     }
 
-    pub fn spawn_instance(&mut self, mesh_path: &str, bitmap_path: &str, pos: Vector4, y_angle: f32, scale: f32, light: bool) {
+    pub fn spawn_instance(
+        &mut self,
+        mesh_path: &str,
+        bitmap_path: &str,
+        pos: Vector4,
+        y_angle: f32,
+        scale: f32,
+        light: bool,
+    ) {
         let mesh_res = Self::make_mesh_res(mesh_path);
         let bitmap_res = Self::make_bitmap_res(bitmap_path);
 
@@ -428,7 +465,12 @@ impl World {
         self.instances.push(instance);
     }
 
-    pub fn make_instance(&mut self, mesh_res: &Rc<Box<Mesh>>, bitmap_res: &Rc<Box<Bitmap>>, light: bool) -> Instance {
+    pub fn make_instance(
+        &mut self,
+        mesh_res: &Rc<Box<Mesh>>,
+        bitmap_res: &Rc<Box<Bitmap>>,
+        light: bool,
+    ) -> Instance {
         Instance::new(Rc::clone(&mesh_res), Rc::clone(&bitmap_res), light)
     }
 

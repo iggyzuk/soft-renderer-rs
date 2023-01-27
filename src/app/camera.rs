@@ -38,12 +38,10 @@ impl Camera {
     pub fn transform(&self) -> Matrix4 {
         let mut matrix = Matrix4::new_identity();
         matrix.look_at(self.position, self.position + self.direction, Vector4::UP);
-        matrix
+        return matrix;
     }
 
     pub fn update(&mut self, dt: f32) {
-        // println!("{:?}", self.position);
-
         self.h_angle_f = lerp(self.h_angle_f, self.h_angle, dt * 10.0);
         self.v_angle_f = lerp(self.v_angle_f, self.v_angle, dt * 10.0);
 

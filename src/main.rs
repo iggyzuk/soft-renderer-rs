@@ -20,6 +20,9 @@ const HEIGHT: u32 = 720;
 const RESOLUTION: u32 = 3;
 
 fn main() {
+
+    std::env::set_var("RUST_BACKTRACE", "1");
+
     simple_logger::init_with_level(log::Level::Info).unwrap();
 
     let event_loop = EventLoop::new();

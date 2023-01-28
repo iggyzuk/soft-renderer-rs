@@ -6,3 +6,4 @@ pub mod material;
 pub mod mesh;
 pub mod scan_buffer;
 pub mod vertex;
+pub mod light;

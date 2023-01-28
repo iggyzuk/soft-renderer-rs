@@ -11,14 +11,16 @@ use super::{
 #[derive(Debug)]
 #[rustfmt::skip]
 pub struct Edge {
-    pub x: f32,                       // current x of the edge 
-    pub x_step: f32,                  // how much to step on the x-axis everytime we step down on y-axis
-    pub y_start: u32,                 // y-start of the edge
-    pub y_end: u32,                   // y-end of the edge
-    pub texcoords: Stepable<Vector4>, // texture-coordinate start and step values
-    pub one_over_z: Stepable<f32>,    // one-over-z start and step values
-    pub depth: Stepable<f32>,         // depth start and step values
-    pub light_amp: Stepable<f32>,     // light-amp start and step values
+    pub x: f32,                               // current x of the edge 
+    pub x_step: f32,                          // how much to step on the x-axis everytime we step down on y-axis
+    pub y_start: u32,                         // y-start of the edge
+    pub y_end: u32,                           // y-end of the edge
+    pub position: Stepable<Vector4>,          // position
+    pub texcoords: Stepable<Vector4>,         // texture-coordinate start and step values
+    pub one_over_z: Stepable<f32>,            // one-over-z start and step values
+    pub depth: Stepable<f32>,                 // depth start and step values
+    pub light_amp: Stepable<f32>,             // light-amp start and step values
+    pub shadow_map_coords: Stepable<Vector4>, // interpolated shadow-map-coordinates
 }
 
 impl Edge {
@@ -66,6 +68,8 @@ impl Edge {
 
         // construct steps with gradients with initial values
         #[rustfmt::skip]
+        let position = Stepable::new(&gradients.position, start_index, x_prestep, y_prestep, x_step);
+        #[rustfmt::skip]
         let texcoords = Stepable::new(&gradients.texcoords, start_index, x_prestep, y_prestep, x_step);
         #[rustfmt::skip]
         let one_over_z = Stepable::new(&gradients.one_over_z, start_index, x_prestep, y_prestep, x_step);
@@ -73,6 +77,8 @@ impl Edge {
         let depth = Stepable::new(&gradients.depth, start_index, x_prestep, y_prestep, x_step);
         #[rustfmt::skip]
         let light_amp = Stepable::new(&gradients.light_amt, start_index, x_prestep, y_prestep, x_step);
+        #[rustfmt::skip]
+        let shadow_map_coords = Stepable::new(&gradients.shadow_map_coords, start_index, x_prestep, y_prestep, x_step);
 
         // and finally return the newly constructed edge
         return Self {
@@ -80,10 +86,12 @@ impl Edge {
             x_step,
             y_start: (y_start as u32),
             y_end: (y_end as u32),
+            position,
             texcoords,
             one_over_z,
             depth,
             light_amp,
+            shadow_map_coords,
         };
     }
 
@@ -92,10 +100,12 @@ impl Edge {
         self.x += self.x_step;
 
         // move forward all gradients
+        self.position.step();
         self.texcoords.step();
         self.one_over_z.step();
         self.depth.step();
         self.light_amp.step();
+        self.shadow_map_coords.step();
     }
 }
 

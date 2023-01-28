@@ -2,6 +2,7 @@ use crate::math::linear_algebra::{matrix::Matrix4, vector::Vector4};
 
 #[derive(Debug, Default, Clone, Copy)]
 pub struct Vertex {
+    pub local_position: Vector4,
     pub position: Vector4,
     pub texcoords: Vector4,
     pub normal: Vector4,
@@ -10,6 +11,7 @@ pub struct Vertex {
 impl Vertex {
     pub fn new(position: Vector4, texcoords: Vector4, normal: Vector4) -> Self {
         return Self {
+            local_position: position,
             position,
             texcoords,
             normal,
@@ -17,10 +19,10 @@ impl Vertex {
     }
 
     pub fn transform(mut self, transform_mat: &Matrix4, normal_mat: &Matrix4) -> Self {
+        self.local_position = Matrix4::multiply_vector(normal_mat, self.normal);
         self.position = Matrix4::multiply_vector(transform_mat, self.position);
-        // for light direction
-        self.normal = Matrix4::multiply_vector(normal_mat, self.normal);
-        self
+        self.normal = Matrix4::multiply_vector(normal_mat, self.normal); // for light direction
+        return self;
     }
 
     // performs perspective divide with original z-value that is now stored in w
@@ -35,7 +37,7 @@ impl Vertex {
         self.position.x /= self.position.w;
         self.position.y /= self.position.w;
         self.position.z /= self.position.w;
-        self
+        return self;
     }
 
     // cross product of vertex with two others can tell us its handedness
@@ -59,11 +61,14 @@ impl Vertex {
 
     // lerp all vertex values, it's used for clipping vertices
     pub fn lerp(&self, other: &Vertex, lerp_amt: f32) -> Self {
-        return Self::new(
+        let mut vertex = Self::new(
             self.position.lerp(other.position, lerp_amt),
             self.texcoords.lerp(other.texcoords, lerp_amt),
             self.normal.lerp(other.normal, lerp_amt),
         );
+        vertex.local_position = vertex.local_position.lerp(other.local_position, lerp_amt);
+
+        return vertex;
     }
 
     // clipping before perspective divide

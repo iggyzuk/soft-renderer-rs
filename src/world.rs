@@ -5,6 +5,7 @@ use crate::app::instance::Instance;
 use crate::app::mesh_loader::load_mesh;
 use crate::app::renderer::Renderer;
 use crate::app::starfield::Starfield;
+use crate::graphics::light::Light;
 use crate::graphics::mesh::Mesh;
 use crate::graphics::vertex::Vertex;
 use crate::graphics::{bitmap::Bitmap, color::Color};
@@ -50,7 +51,7 @@ impl World {
             starfield: Starfield::new(0, 0.1, 2.0),
             renderer: Renderer::new(width, height, pixels),
             camera: Camera::new(
-                Vector4::new(0.0, -2.0, -2.0, 1.0),
+                Vector4::new(0.0, 2.0, 2.0, 1.0),
                 Vector4::new(0.0, 0.0, -1.0, 0.0),
             ),
             projection: Matrix4::perspective(100.0, aspect_ratio, 0.1, 100.0),
@@ -114,17 +115,17 @@ impl World {
             vec![
                 Vertex::new(
                     Vector4::new(-2.0, 0.0, 0.0, 1.0),
-                    Vector4::ZERO,
+                    Vector4::new(0.0, 1.0, 0.0, 0.0),
                     Vector4::FORWARD,
                 ),
                 Vertex::new(
                     Vector4::new(2.0, 0.0, 0.0, 1.0),
-                    Vector4::RIGHT,
+                    Vector4::new(1.0, 1.0, 0.0, 0.0),
                     Vector4::FORWARD,
                 ),
                 Vertex::new(
                     Vector4::new(0.0, 2.0, 0.0, 1.0),
-                    Vector4::ONE,
+                    Vector4::new(0.5, 0.0, 0.0, 0.0),
                     Vector4::FORWARD,
                 ),
             ],
@@ -194,9 +195,9 @@ impl World {
         self.camera.update(dt);
 
         // # example: set the ground bitmap to use the same pixels as what the renderer sees
-        let mut render_bitmap = Box::new(Bitmap::new(self.width, self.height));
-        render_bitmap.pixels = self.renderer.color_buffer.pixels.clone();
-        self.instances[1].bitmap = Rc::new(render_bitmap);
+        // let mut render_bitmap = Box::new(Bitmap::new(self.width, self.height));
+        // render_bitmap.pixels = self.renderer.color_buffer.pixels.clone();
+        // self.instances[1].bitmap = Rc::new(render_bitmap);
 
         // # example: motion
         // for instance in self.instances.iter_mut() {
@@ -206,23 +207,70 @@ impl World {
 
         //     instance.transform.rotate_y(360.0 / 8.0 * dt);
         // }
+
+        for instance in self.instances.iter_mut().take(1) {
+            // instance
+            //     .transform
+            //     .translate(self.time.cos() * 0.01, 0.0, self.time.sin() * 0.01);
+
+            instance.transform.rotate_y(360.0 / 8.0 * dt);
+        }
     }
 
     pub fn draw(&mut self, dt: f32) {
         // fill and clear buffers
-        self.renderer
-            .color_buffer
-            .fill(&Color::newf(0.1, 0.1, 0.1, 1.0));
+        #[rustfmt::skip]
+        self.renderer.color_buffer.fill(&Color::newf(0.1, 0.1, 0.1, 1.0));
         self.renderer.clear_depth_buffer();
 
         // # startfield:
         // self.starfield.render(&mut self.renderer.color_buffer, dt);
 
+        // # shadow mapping experiment
+        // let shadow_projection = Matrix4::perspective(100.0, self.width as f32 / self.height as f32, 0.1, 100.0);
+        let range = 5.0;
+        let shadow_projection = Matrix4::orthographic(-range, range, -range, range, 5., -5.0);
+
+        let mut shadow_light_transform = Matrix4::new_identity();
+        #[rustfmt::skip]
+        // shadow_light_transform.look_at(self.camera.position, self.camera.position + self.camera.direction, Vector4::UP);
+        shadow_light_transform.look_at(Vector4::new(1.58, 4.52, 2.7, 0.0), Vector4::new(-0.42, -0.73, -0.53, 0.0), Vector4::UP);
+
+        // dbg!(self.camera.position);
+        // dbg!(self.camera.direction);
+
+        let shadow_view_projection = Matrix4::multiply(&shadow_projection, &shadow_light_transform);
+
+        // draw all instances
+        for instance in self.instances.iter() {
+            instance.draw(&mut self.renderer, &shadow_view_projection, None);
+        }
+
+        let shadow_depth = self.renderer.depth_buffer.clone();
+        let mut shadow_bitmap = self.renderer.color_buffer.clone();
+        for (i, value) in shadow_bitmap.chunks_exact_mut(4).enumerate() {
+            value[0] = (shadow_depth[i] * 255.0) as u8;
+            value[1] = (shadow_depth[i] * 255.0) as u8;
+            value[2] = (shadow_depth[i] * 255.0) as u8;
+            value[3] = 255;
+        }
+
+        let light = Light::new(
+            shadow_view_projection,
+            shadow_light_transform,
+            shadow_bitmap,
+        );
+
+        // fill and clear buffers again!
+        #[rustfmt::skip]
+        self.renderer.color_buffer.fill(&Color::newf(0.1, 0.1, 0.1, 1.0));
+        self.renderer.clear_depth_buffer();
+
         let view_projection = Matrix4::multiply(&self.projection, &self.camera.transform());
 
         // draw all instances
         for instance in self.instances.iter() {
-            instance.draw(&mut self.renderer, &view_projection);
+            instance.draw(&mut self.renderer, &view_projection, Option::Some(&light));
         }
 
         // # debug: draw all vertices
@@ -300,27 +348,26 @@ impl World {
         // }
         // sb.draw(&mut self.renderer.color_buffer);
 
-        // # shadow mapping experiment
-        let perspective =
-            Matrix4::perspective(100.0, self.width as f32 / self.height as f32, 0.1, 100.0);
-
-        let view_projection = Matrix4::multiply(&self.projection, &self.camera.transform());
-
-        // draw all instances
-        for instance in self.instances.iter() {
-            instance.draw(&mut self.renderer, &view_projection);
-        }
-
-        // # debug: show depth buffer
         for x in 0..self.width / 4 {
             for y in 0..self.height / 4 {
                 let index = (x * 4 + y * 4 * self.width) as usize;
-                let d = self.renderer.depth_buffer[index] as f32;
+                let d = shadow_depth[index] as f32;
                 self.renderer
                     .color_buffer
                     .set_pixel(x, y, &Color::newf(d, d, d, 1.0))
             }
         }
+
+        // # debug: show depth buffer
+        // for x in 0..self.width / 4 {
+        //     for y in 0..self.height / 4 {
+        //         let index = (x * 4 + y * 4 * self.width) as usize;
+        //         let d = self.renderer.depth_buffer[index] as f32;
+        //         self.renderer
+        //             .color_buffer
+        //             .set_pixel(x, y, &Color::newf(d, d, d, 1.0))
+        //     }
+        // }
 
         self.renderer.present();
     }
@@ -332,12 +379,14 @@ impl World {
         let look_speed = 3.0;
 
         match event {
-            WorldInputEvent::MoveForward => self.camera.speed -= move_speed * dt,
-            WorldInputEvent::MoveBack => self.camera.speed += move_speed * dt,
-            WorldInputEvent::MoveUp => self.camera.v_speed -= move_speed * dt,
-            WorldInputEvent::MoveDown => self.camera.v_speed += move_speed * dt,
-            WorldInputEvent::MoveLeft => self.camera.h_speed -= move_speed * dt,
-            WorldInputEvent::MoveRight => self.camera.h_speed += move_speed * dt,
+            WorldInputEvent::MoveForward => self.camera.speed += move_speed * dt,
+            WorldInputEvent::MoveBack => self.camera.speed -= move_speed * dt,
+
+            WorldInputEvent::MoveUp => self.camera.v_speed += move_speed * dt,
+            WorldInputEvent::MoveDown => self.camera.v_speed -= move_speed * dt,
+
+            WorldInputEvent::MoveLeft => self.camera.h_speed += move_speed * dt,
+            WorldInputEvent::MoveRight => self.camera.h_speed -= move_speed * dt,
 
             WorldInputEvent::LookUp => self.camera.v_angle += look_speed * dt,
             WorldInputEvent::LookDown => self.camera.v_angle -= look_speed * dt,

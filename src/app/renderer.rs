@@ -7,11 +7,12 @@ use crate::{
         color::Color,
         edge::Edge,
         gradients::{Gradients, Triangle},
+        light::Light,
         material::Material,
         mesh::Mesh,
         vertex::Vertex,
     },
-    math::linear_algebra::matrix::Matrix4,
+    math::linear_algebra::{matrix::Matrix4, vector::Vector4},
 };
 
 #[derive(Debug, Default)]
@@ -46,7 +47,7 @@ impl Renderer {
             debug: Default::default(),
         };
 
-        // renderer.debug.wireframe = true;
+        renderer.debug.wireframe = true;
         // renderer.debug.solid = true;
         // renderer.debug.depth = true;
         // renderer.debug.depth_miss = true;
@@ -70,6 +71,7 @@ impl Renderer {
         view_projection: &Matrix4,
         transform: &Matrix4,
         material: &Material,
+        light: Option<&Light>,
     ) {
         let mvp = Matrix4::multiply(view_projection, transform);
 
@@ -81,22 +83,47 @@ impl Renderer {
 
         // @todo: run this in parallel, will need a RwLock for color/depth buffers
         for chunk in mesh.indices.chunks_exact(3) {
-            let v1 = mesh.vertices[chunk[0]].transform(&mvp, transform);
-            let v2 = mesh.vertices[chunk[1]].transform(&mvp, transform);
-            let v3 = mesh.vertices[chunk[2]].transform(&mvp, transform);
-            self.draw_triangle(v1, v2, v3, material);
+            let mut v1 = mesh.vertices[chunk[0]].transform(&mvp, transform);
+            let mut v2 = mesh.vertices[chunk[1]].transform(&mvp, transform);
+            let mut v3 = mesh.vertices[chunk[2]].transform(&mvp, transform);
+
+            // // transform shadown-map-coords while the vertices are still in local space
+            // if let Some(light) = light {
+            //     // v1.shadow_map_coords = Matrix4::multiply_vector(&light.projection, v1.position);
+            //     // v2.shadow_map_coords = Matrix4::multiply_vector(&light.projection, v2.position);
+            //     // v3.shadow_map_coords = Matrix4::multiply_vector(&light.projection, v3.position);
+
+            //     // or just save the local space positions
+            //     v1.local_position = v1.position;
+            //     v2.local_position = v2.position;
+            //     v3.local_position = v3.position;
+            // }
+
+            // // finally transform the vertex (position will be in model-view-projection)
+            // v1 = v1.transform(&mvp, transform);
+            // v2 = v2.transform(&mvp, transform);
+            // v3 = v3.transform(&mvp, transform);
+
+            self.draw_triangle(v1, v2, v3, material, light);
         }
     }
 
     // try draw a triangle can be partially visible, fully visible, or completely invisible
-    pub fn draw_triangle(&mut self, v1: Vertex, v2: Vertex, v3: Vertex, material: &Material) {
+    pub fn draw_triangle(
+        &mut self,
+        v1: Vertex,
+        v2: Vertex,
+        v3: Vertex,
+        material: &Material,
+        light: Option<&Light>,
+    ) {
         let v1_visible = v1.is_inside_view_frustum();
         let v2_visible = v2.is_inside_view_frustum();
         let v3_visible = v3.is_inside_view_frustum();
 
         // all vertices are visible so draw the triangle as is
         if v1_visible && v2_visible && v3_visible {
-            self.fill_triangle(v1, v2, v3, material);
+            self.fill_triangle(v1, v2, v3, material, light);
 
             // # debug: draw with green triangles that are not broken
             // let mut fill = Bitmap::new(1, 1);
@@ -104,11 +131,18 @@ impl Renderer {
             // self.fill_triangle(v1, v2, v3, &fill);
         } else {
             // one or more (or all) vertices are not visible, we must clip them
-            self.clip_triangle(v1, v2, v3, material);
+            self.clip_triangle(v1, v2, v3, material, light);
         }
     }
 
-    fn clip_triangle(&mut self, v1: Vertex, v2: Vertex, v3: Vertex, material: &Material) {
+    fn clip_triangle(
+        &mut self,
+        v1: Vertex,
+        v2: Vertex,
+        v3: Vertex,
+        material: &Material,
+        light: Option<&Light>,
+    ) {
         // # 3d homogenous clipping
         // https://fabiensanglard.net/polygon_codec/
         //
@@ -167,7 +201,7 @@ impl Renderer {
             // bitmap.fill(&Color::RED);
 
             // fill the triangle
-            self.fill_triangle(v1, v2, v3, &material);
+            self.fill_triangle(v1, v2, v3, &material, light);
         }
     }
 
@@ -250,7 +284,14 @@ impl Renderer {
     }
 
     // given 3 vertices we will fill everything in between with pixels
-    pub fn fill_triangle(&mut self, v1: Vertex, v2: Vertex, v3: Vertex, material: &Material) {
+    pub fn fill_triangle(
+        &mut self,
+        v1: Vertex,
+        v2: Vertex,
+        v3: Vertex,
+        material: &Material,
+        light: Option<&Light>,
+    ) {
         let identity = Matrix4::new_identity();
 
         // transform vertices from world-space to screen-space using matrices.
@@ -330,7 +371,7 @@ impl Renderer {
         // self.color_buffer
         //     .set_pixel(max.position.x as u32, max.position.y as u32, &Color::BLUE);
 
-        self.scan_triangle(min, mid, max, handedness, material);
+        self.scan_triangle(min, mid, max, handedness, material, light);
     }
 
     pub fn scan_triangle(
@@ -340,10 +381,11 @@ impl Renderer {
         max: Vertex,
         handedness: bool,
         material: &Material,
+        light: Option<&Light>,
     ) {
         // construct gradients for the triangle
         // it contains tex-coords, one-over-z, depth, light-amt for all 3 vertices
-        let gradients = Gradients::new(Triangle::new(min.clone(), mid.clone(), max.clone()));
+        let gradients = Gradients::new(Triangle::new(min.clone(), mid.clone(), max.clone()), light);
 
         // # debug: switch textures to see how triangles are drawn
         // make sure to change &bitmap to &debug_tex_1/&debug_tex_1 in scan_edges(...)
@@ -391,6 +433,7 @@ impl Renderer {
             &mut min_to_mid,
             handedness,
             &material,
+            light,
         );
 
         // second half of the triangle (after the mid vertex)
@@ -408,6 +451,7 @@ impl Renderer {
             &mut mid_to_max,
             handedness,
             &material,
+            light,
         );
     }
 
@@ -418,6 +462,7 @@ impl Renderer {
         edge_b: &mut Edge,
         handedness: bool,
         material: &Material,
+        light: Option<&Light>,
     ) {
         // all edges must be draw from left to right
         let mut left = edge_a;
@@ -475,7 +520,7 @@ impl Renderer {
             //     self.color_buffer.set_pixel(x_max, y, &color);
             // }
 
-            self.draw_scan_line(&gradients, &left, &right, y, &material);
+            self.draw_scan_line(&gradients, &left, &right, y, &material, light);
 
             // step to the next pixel on both edges
             left.step();
@@ -498,6 +543,7 @@ impl Renderer {
         right: &Edge,
         y: u32,
         material: &Material,
+        light: Option<&Light>,
     ) {
         // fill convention: if the pixel center is inside the shape it's drawn, otherwise it isn't
         let x_min = left.x.ceil() as u32;
@@ -505,11 +551,27 @@ impl Renderer {
         let x_prestep = x_min as f32 - left.x;
 
         // define some gradient lerp values for the current scan line
+        let mut pos_x = left.position.value.x + gradients.position.step.x.x * x_prestep;
+        let mut pos_y = left.position.value.y + gradients.position.step.x.y * x_prestep;
+        let mut pos_z = left.position.value.z + gradients.position.step.x.z * x_prestep;
+
         let mut tex_coord_x = left.texcoords.value.x + gradients.texcoords.step.x.x * x_prestep;
         let mut tex_coord_y = left.texcoords.value.y + gradients.texcoords.step.x.y * x_prestep;
+
         let mut one_over_z = left.one_over_z.value + gradients.one_over_z.step.x * x_prestep;
         let mut depth = left.depth.value + gradients.depth.step.x * x_prestep;
         let mut light_amt = left.light_amp.value + gradients.light_amt.step.x * x_prestep;
+
+        let mut shadow_map_coords_x =
+            left.shadow_map_coords.value.x + gradients.shadow_map_coords.step.x.x * x_prestep;
+        let mut shadow_map_coords_y =
+            left.shadow_map_coords.value.y + gradients.shadow_map_coords.step.x.y * x_prestep;
+        let mut shadow_map_coords_z =
+            left.shadow_map_coords.value.z + gradients.shadow_map_coords.step.x.z * x_prestep;
+        let mut shadow_map_coords_w =
+            left.shadow_map_coords.value.w + gradients.shadow_map_coords.step.x.w * x_prestep;
+
+        // let mut shadow_d = left.shadow_d.value + gradients.shadow_d.step.x * x_prestep;
 
         // @todo: remove this...
         // let something = Self::step(&left.depth, &gradients.depth.step, x_prestep);
@@ -524,6 +586,39 @@ impl Renderer {
         //     let texel = bitmap.get_pixel(src_x, src_y);
         //     self.color_buffer.set_pixel(x_min, y, &texel);
         // }
+
+        let sample_shadow_map = |shadow_map: &Bitmap, x: u32, y: u32, compare: f32| -> f32 {
+            // the z value of the current pixel
+            let mapped_compare = (compare * 10.0) as u8;
+            // compare with what is inside the shadow map
+            return if shadow_map.get_pixel(x, y).r < mapped_compare {
+                1.0
+            } else {
+                0.0
+            };
+        };
+
+        // let one_over_z_copy = one_over_z;
+
+        let calc_shadow_amount = |shadow_map: &Bitmap, initial_shadow_map_coords: Vector4| -> f32 {
+            // I'm not doing perspective divide!
+            // might need to do perspective divide on all 3 components
+            let x = initial_shadow_map_coords.x; // / initial_shadow_map_coords.w;
+            let y = initial_shadow_map_coords.y; // / initial_shadow_map_coords.w;
+            let z = initial_shadow_map_coords.z; // / initial_shadow_map_coords.w; // this might need to be the depth
+
+            // let z_copy = 1.0 / one_over_z_copy;
+            // let src_x = ((x * z_copy) * (shadow_map.width - 1) as f32 + 0.5) as u32;
+            // let src_y = ((y * z_copy) * (shadow_map.height - 1) as f32 + 0.5) as u32;
+
+            let src_x = (x * (shadow_map.width - 1) as f32 + 0.5) as u32;
+            let src_y = (y * (shadow_map.height - 1) as f32 + 0.5) as u32;
+
+            // println!("{:?}", initial_shadow_map_coords);
+            // println!("{:?},{:?},{:?}", x, y, z);
+
+            return sample_shadow_map(shadow_map, src_x, src_y, z);
+        };
 
         for x in x_min..x_max {
             // get the flat index to find the pixel in the depth buffer
@@ -542,15 +637,147 @@ impl Renderer {
                 // copy the pixel from the bitmap
                 let mut tex_pixel = material.bitmap.get_pixel(src_x, src_y);
 
-                // light it up
-                if material.light {
-                    tex_pixel.r = (tex_pixel.r as f32 * light_amt) as u8;
-                    tex_pixel.g = (tex_pixel.g as f32 * light_amt) as u8;
-                    tex_pixel.b = (tex_pixel.b as f32 * light_amt) as u8;
+                // # TOP PRIORITY:
+                // make sure the gradient shadow map coordinates are correctly interpolating across the vertices
+
+                // shadow maping
+                if let Some(light) = light {
+                    let shadow_map = &light.bitmap;
+
+                    let initial = Vector4::new(
+                        shadow_map_coords_x,
+                        shadow_map_coords_y,
+                        shadow_map_coords_z,
+                        1.0,
+                    );
+
+                    let shadow = calc_shadow_amount(shadow_map, initial);
+                    // let shadow = shadow_map_coords_z;
+                    // dbg!(shadow_map_coords_z);
+
+                    // # debug: texture coords
+                    // let f = 1.0;
+                    // let fx = (tex_coord_x * z) / f;
+                    // let fy = (tex_coord_y * z) / f;
+                    // let fz = 0.0;
+
+                    // # debug: draw normals
+                    // let f = 1.0;
+                    // let fx = (shadow_map_coords_x) / f;
+                    // let fy = (shadow_map_coords_y) / f;
+                    // let fz = (shadow_map_coords_z) / f;
+
+                    // # EXPECTED: smaller values are darker in light space
+                    // top of mario should be more white and darker as it goes further
+
+                    // WHY: does light_amt, and depth work so well?
+                    // I think the vertices in draw triangle have already been transformed into the camera view
+                    // so the positions even though lerped stay local to the view
+
+                    // tex_pixel.r = ((tex_pixel.r as f32) * fx) as u8;
+                    // tex_pixel.g = ((tex_pixel.g as f32) * fy) as u8;
+                    // tex_pixel.b = ((tex_pixel.b as f32) * fz) as u8;
+
+                    if shadow <= 0.0 {
+                        tex_pixel = Color::GREEN;
+                    } else {
+                        tex_pixel = Color::BLUE;
+                    }
+
+                    // 1. sample what's inside the texture for point shadow_v_x and shadow_v_y and depth
+                    //     note: it needs perspective divide
+                    // 2. compare the depth
+
+                    // let src_x = ((tex_coord_x * z) * (light.bitmap.width - 1) as f32 + 0.5) as u32;
+                    // let src_y = ((tex_coord_y * z) * (light.bitmap.height - 1) as f32 + 0.5) as u32;
+                    // let mut existing_shadow_pixel = light.bitmap.get_pixel(src_x, src_y);
+                    // existing_shadow_pixel.a = 200;
+                    // self.color_buffer.set_pixel(x, y, &existing_shadow_pixel);
+
+                    // let current_shadow_v = Matrix4::multiply_vector(
+                    //     &light.projection,
+                    //     Vector4::new(shadow_v_x, shadow_v_y, 0.0, 1.0),
+                    // );
+
+                    // let src_x =
+                    //     ((current_shadow_v.x) * (light.bitmap.width - 1) as f32 + 0.5) as u32;
+                    // let src_y =
+                    //     ((current_shadow_v.y) * (light.bitmap.height - 1) as f32 + 0.5) as u32;
+                    // let shadow_pixel = light.bitmap.get_pixel(src_x, src_y);
+
+                    // if shadow_pixel.r > existing_shadow_pixel.r {
+                    //     self.color_buffer.set_pixel(x, y, &Color::BLUE);
+                    // } else {
+                    //     self.color_buffer.set_pixel(x, y, &Color::GREEN);
+                    // }
+
+                    // let src_x =
+                    //     ((current_shadow_v.x) * (light.bitmap.width - 1) as f32 + 0.5) as u32;
+                    // let src_y =
+                    //     ((current_shadow_v.y) * (light.bitmap.height - 1) as f32 + 0.5) as u32;
+                    // let shadow_pixel = light.bitmap.get_pixel(src_x, src_y);
+
+                    // let src_x = ((tex_coord_x * z) * (light.bitmap.width - 1) as f32 + 0.5) as u32;
+                    // let src_y = ((tex_coord_y * z) * (light.bitmap.height - 1) as f32 + 0.5) as u32;
+                    // let mut existing_shadow_pixel = light.bitmap.get_pixel(src_x, src_y);
+                    // existing_shadow_pixel.a = 200;
+                    // self.color_buffer.set_pixel(x, y, &existing_shadow_pixel);
+
+                    // let current_shadow_v = Matrix4::multiply_vector(
+                    //     &light.projection,
+                    //     Vector4::new(shadow_v_x, shadow_v_y, 0.0, 1.0),
+                    // );
+
+                    // let src_x =
+                    //     ((current_shadow_v.x) * (light.bitmap.width - 1) as f32 + 0.5) as u32;
+                    // let src_y =
+                    //     ((current_shadow_v.y) * (light.bitmap.height - 1) as f32 + 0.5) as u32;
+                    // let shadow_pixel = light.bitmap.get_pixel(src_x, src_y);
+
+                    // if shadow_pixel.r > existing_shadow_pixel.r {
+                    //     self.color_buffer.set_pixel(x, y, &Color::BLUE);
+                    // } else {
+                    //     self.color_buffer.set_pixel(x, y, &Color::GREEN);
+                    // }
+
+                    // let current_shadow_v = Matrix4::multiply_vector(
+                    //     &light.projection,
+                    //     Vector4::new(shadow_v_x, shadow_v_y, 0.0, 1.0),
+                    // );
+
+                    // #[rustfmt::skip]
+                    // let src_x = ((current_shadow_v.x * z * 0.5 + 0.5) * (light.bitmap.width - 1) as f32 + 0.5) as u32;
+                    // #[rustfmt::skip]
+                    // let src_y = ((current_shadow_v.y * z * 0.5 + 0.5) * (light.bitmap.height - 1) as f32 + 0.5) as u32;
+
+                    // let shadow_pixel = light.bitmap.get_pixel(src_x, src_y);
+
+                    // if shadow_pixel.r > existing_shadow_pixel.r {
+                    //     self.color_buffer
+                    //         .set_pixel(x, y, &Color::newf(0.0, 0.0, 1.0, 0.5));
+                    // } else {
+                    //     // self.color_buffer
+                    //     //     .set_pixel(x, y, &Color::newf(0.0, 1.0, 0.0, 0.5));
+                    // }
+
+                    // existing_shadow_pixel.a = 200;
+
+                    // self.color_buffer.set_pixel(x, y, &existing_shadow_pixel);
                 }
 
-                // finally set pixel in the color buffer
                 self.color_buffer.set_pixel(x, y, &tex_pixel);
+
+                // self.color_buffer.set_pixel(x, y, &tex_pixel);
+
+                // light it up
+                // if material.light {
+                //     tex_pixel.r = (tex_pixel.r as f32 * light_amt) as u8;
+                //     tex_pixel.g = (tex_pixel.g as f32 * light_amt) as u8;
+                //     tex_pixel.b = (tex_pixel.b as f32 * light_amt) as u8;
+                // }
+
+                // finally set pixel in the color buffer
+                // self.color_buffer.set_pixel(x, y, &tex_pixel);
             } else {
                 // # debug: we can draw a blue pixel when the depth test fails what it means is that
                 // we tried to draw something in a screen position where the z-buffer already has a lower value
@@ -578,11 +805,21 @@ impl Renderer {
             }
 
             // step all gradient values for this scan line
+            pos_x += gradients.position.step.x.x;
+            pos_y += gradients.position.step.x.y;
+            pos_z += gradients.position.step.x.z;
+
             tex_coord_x += gradients.texcoords.step.x.x;
             tex_coord_y += gradients.texcoords.step.x.y;
+
             one_over_z += gradients.one_over_z.step.x;
             depth += gradients.depth.step.x;
             light_amt += gradients.light_amt.step.x;
+
+            shadow_map_coords_x += gradients.shadow_map_coords.step.x.x;
+            shadow_map_coords_y += gradients.shadow_map_coords.step.x.y;
+            shadow_map_coords_z += gradients.shadow_map_coords.step.x.z;
+            shadow_map_coords_w += gradients.shadow_map_coords.step.x.w;
         }
 
         // # debug: draw wireframe

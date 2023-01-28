@@ -130,6 +130,36 @@ impl Matrix4 {
         matrix
     }
 
+    pub fn orthographic(left: f32, right: f32, bottom: f32, top: f32, near: f32, far: f32) -> Self {
+        let mut matrix = Self::new();
+
+        let width = right - left;
+        let height = top - bottom;
+        let depth = far - near;
+
+        matrix[0][0] = 2.0 / width;
+        matrix[0][1] = 0.0;
+        matrix[0][2] = 0.0;
+        matrix[0][3] = 0.0;
+
+        matrix[1][0] = 0.0;
+        matrix[1][1] = 2.0 / height;
+        matrix[1][2] = 0.0;
+        matrix[1][3] = 0.0;
+
+        matrix[2][0] = 0.0;
+        matrix[2][1] = 0.0;
+        matrix[2][2] = -2.0 / depth;
+        matrix[2][3] = 0.0;
+
+        matrix[3][0] = -(right + left) / width;
+        matrix[3][1] = -(top + bottom) / height;
+        matrix[3][2] = -(far + near) / depth;
+        matrix[3][3] = 1.0;
+
+        return matrix;
+    }
+
     pub fn look_at(&mut self, eye: Vector4, target: Vector4, up_axis: Vector4) {
         let forward = (target - eye).normalized();
         let right = up_axis.cross(forward).normalized();
@@ -149,8 +179,7 @@ impl Matrix4 {
         m[1][2] = forward.y;
         m[2][2] = forward.z;
 
-        // @todo: why not -eye?
-        m.translate(eye.x, eye.y, eye.z);
+        m.translate(-eye.x, -eye.y, -eye.z);
 
         self.matrix = *Self::multiply(self, &m);
     }

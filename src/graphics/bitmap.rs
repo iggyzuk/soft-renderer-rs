@@ -57,6 +57,10 @@ impl Bitmap {
     pub fn get_pixel(&self, x: u32, y: u32) -> Color {
         let index = ((x + y * self.width) * 4) as usize;
 
+        if index < 0 || index >= (self.width * self.height * 4) as usize {
+            return Color::BLACK;
+        }
+
         Color::new(self.pixels[index + 0], self.pixels[index + 1], self.pixels[index + 2], self.pixels[index + 3])
     }
 

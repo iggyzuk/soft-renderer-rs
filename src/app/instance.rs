@@ -1,6 +1,7 @@
 use std::rc::Rc;
 
 use crate::graphics::bitmap::Bitmap;
+use crate::graphics::light::Light;
 use crate::graphics::material::Material;
 use crate::graphics::mesh::Mesh;
 use crate::math::linear_algebra::matrix::Matrix4;
@@ -26,13 +27,14 @@ impl Instance {
         }
     }
 
-    pub fn draw(&self, renderer: &mut Renderer, view_projection: &Matrix4) {
+    pub fn draw(&self, renderer: &mut Renderer, view_projection: &Matrix4, light: Option<&Light>) {
         renderer.draw_mesh(
             self.mesh.as_ref(),
             view_projection,
             &self.transform,
             // @todo: use Rc Box Material instead of Bitmap
             &Material::new(self.light, self.bitmap.clone()),
+            light,
         );
     }
 }

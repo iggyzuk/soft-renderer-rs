@@ -9,7 +9,6 @@ use crate::graphics::light::Light;
 use crate::graphics::mesh::Mesh;
 use crate::graphics::vertex::Vertex;
 use crate::graphics::{bitmap::Bitmap, color::Color};
-use crate::math::lerp;
 use crate::math::linear_algebra::{matrix::Matrix4, vector::Vector4};
 use image::EncodableLayout;
 use pixels::Pixels;
@@ -185,17 +184,17 @@ impl World {
         );
 
         // create a sky bitmap
-        let mut bitmap = Bitmap::new(1, 128);
-        for y in 0..bitmap.height {
-            let l = lerp(2.0, 0.2, y as f32 / bitmap.height as f32);
-            bitmap.set_pixel(0, y, &Color::newf(l * 0.1, l * 0.7, l, 1.0));
-        }
+        // let mut bitmap = Bitmap::new(1, 128);
+        // for y in 0..bitmap.height {
+        //     let l = lerp(2.0, 0.2, y as f32 / bitmap.height as f32);
+        //     bitmap.set_pixel(0, y, &Color::newf(l * 0.1, l * 0.7, l, 1.0));
+        // }
 
-        let bitmap_resource = Rc::new(Box::new(bitmap));
+        // let bitmap_resource = Rc::new(Box::new(bitmap));
 
-        let sky = Self::make_mesh_res("./assets/skydome.obj");
-        let instance = world.make_instance(&sky, &bitmap_resource, false);
-        world.instances.push(instance);
+        // let sky = Self::make_mesh_res("./assets/skydome.obj");
+        // let instance = world.make_instance(&sky, &bitmap_resource, false);
+        // world.instances.push(instance);
 
         return world;
     }
@@ -239,16 +238,10 @@ impl World {
 
         // # shadow mapping experiment
         // let shadow_projection = Matrix4::perspective(100.0, self.width as f32 / self.height as f32, 0.1, 100.0);
-        let range = 5.0;
+        let range = 10.0;
         let aspect = self.width as f32 / self.height as f32;
-        let shadow_projection = Matrix4::orthographic(
-            -range * aspect,
-            range * aspect,
-            -range,
-            range,
-            20.0,
-            0.0,
-        );
+        let shadow_projection =
+            Matrix4::orthographic(-range * aspect, range * aspect, -range, range, 25.0, -5.0);
         // let shadow_projection = Matrix4::perspective(130.0, self.width as f32 / self.height as f32, 0.1, 100.0);
 
         let mut shadow_light_transform = Matrix4::new_identity();
@@ -268,7 +261,11 @@ impl World {
         let shadow_view_projection = Matrix4::multiply(&shadow_projection, &shadow_light_transform);
 
         // @todo: store renderer and light in world instead of making new ones every frame!
-        let mut shadow_renderer = Renderer::new(self.width * 2, self.height * 2);
+        let shadow_map_quality = 3;
+        let mut shadow_renderer = Renderer::new(
+            self.width * shadow_map_quality,
+            self.height * shadow_map_quality,
+        );
 
         // draw all instances
         for instance in self.instances.iter() {
@@ -381,7 +378,7 @@ impl World {
         // }
         // sb.draw(&mut self.renderer.color_buffer);
 
-        let scale = 8;
+        let scale = 16;
         for x in 0..shadow_bitmap_screenspace_clone.width / scale {
             for y in 0..shadow_bitmap_screenspace_clone.height / scale {
                 // let index = (x * 4 + y * 4 * self.width) as usize;

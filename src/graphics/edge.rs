@@ -34,16 +34,18 @@ impl Edge {
         let y_dist = end.position.y - start.position.y;
         let x_dist = end.position.x - start.position.x;
 
+        // find the slope from x and y start to end distances
+        //
         // x: 0---------------5
         //    |
         //    |
         //    |
         // y: 3
         //
-        // edge ratio of x to y, based on vertex distances
         // example 5/3 = 1.666
         //
-        // basically x_step is how much our x increases for every increase in the y
+        // x_step is the slope x over y (for every 1 unit of y how much we need to step on x)
+        // from example: x: 1.666, y: 1.0
         let x_step = x_dist / y_dist;
 
         // y_prestep is the distance from the vertex to the first scan line y
@@ -63,7 +65,6 @@ impl Edge {
         //    x === x   <--- where x was and where it moved
         //   /
         //  / x_prestep is the distance `===`
-
         let x_prestep = x - start.position.x;
 
         // construct steps with gradients with initial values
@@ -96,7 +97,7 @@ impl Edge {
     }
 
     pub fn step(&mut self) {
-        // move forward on the current scan line
+        // move forward on the current scan line (e.g. x+=1.666)
         self.x += self.x_step;
 
         // move forward all gradients

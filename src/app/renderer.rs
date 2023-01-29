@@ -1,10 +1,10 @@
-use pixels::Pixels;
-use rayon::slice::ParallelSlice;
+use rayon::prelude::*;
 use std::mem;
 
 use crate::{
     graphics::{
         bitmap::Bitmap,
+        clip::clip_triangle,
         color::Color,
         edge::Edge,
         gradients::{Gradients, Triangle},
@@ -73,214 +73,123 @@ impl Renderer {
         light: Option<&Light>,
     ) {
         let mvp = Matrix4::multiply(view_projection, transform);
+        let identity = &Matrix4::new_identity();
 
         // # debug: show little white pixel at the top for this object
         // let pos = Matrix4::multiply_vector(&mvp, transform.translation());
+        // self.color_buffer.set_pixel(pos.x as u32, pos.y as u32, &Color::WHITE);
 
-        // self.color_buffer
-        //     .set_pixel(pos.x as u32, pos.y as u32, &Color::WHITE);
+        // === parallel: get clipped triangles
+        // let triangles: Vec<_> = mesh
+        //     .indices
+        //     .par_chunks_exact(3)
+        //     .map(|chunk| {
+        //         let mut v1 = mesh.vertices[chunk[0]];
+        //         let mut v2 = mesh.vertices[chunk[1]];
+        //         let mut v3 = mesh.vertices[chunk[2]];
 
-        // @todo: run this in parallel, will need a RwLock for color/depth buffers
-        let identity = &Matrix4::new_identity();
-        // for chunk in mesh.indices.par_chunks_exact(3) {
-        for chunk in mesh.indices.chunks_exact(3) {
-            // create new vertices
-            let mut v1 = mesh.vertices[chunk[0]];
-            let mut v2 = mesh.vertices[chunk[1]];
-            let mut v3 = mesh.vertices[chunk[2]];
+        //         // transform shadown-map-coords while the vertices are still in local space
+        //         if let Some(light) = light {
+        //             let light_view_model_projection =
+        //                 Matrix4::multiply(&light.projection, transform);
+        //             v1.shadow_map_coords =
+        //                 Matrix4::multiply_vector(&light_view_model_projection, v1.position);
+        //             v2.shadow_map_coords =
+        //                 Matrix4::multiply_vector(&light_view_model_projection, v2.position);
+        //             v3.shadow_map_coords =
+        //                 Matrix4::multiply_vector(&light_view_model_projection, v3.position);
+        //         }
 
-            // transform shadown-map-coords while the vertices are still in local space
-            if let Some(light) = light {
-                let light_view_model_projection = Matrix4::multiply(&light.projection, transform);
-                v1.shadow_map_coords =
-                    Matrix4::multiply_vector(&light_view_model_projection, v1.position);
-                v2.shadow_map_coords =
-                    Matrix4::multiply_vector(&light_view_model_projection, v2.position);
-                v3.shadow_map_coords =
-                    Matrix4::multiply_vector(&light_view_model_projection, v3.position);
-            }
+        //         // transform vertices into mvp
+        //         v1 = v1.transform(&mvp, identity);
+        //         v2 = v2.transform(&mvp, identity);
+        //         v3 = v3.transform(&mvp, identity);
 
-            // transform vertices into mvp
-            v1 = v1.transform(&mvp, identity);
-            v2 = v2.transform(&mvp, identity);
-            v3 = v3.transform(&mvp, identity);
+        //         let v1_visible = v1.is_inside_view_frustum();
+        //         let v2_visible = v2.is_inside_view_frustum();
+        //         let v3_visible = v3.is_inside_view_frustum();
 
-            self.draw_triangle(v1, v2, v3, material, light);
-        }
-    }
+        //         // all vertices are visible so draw the triangle as is
+        //         if v1_visible && v2_visible && v3_visible {
+        //             // self.fill_triangle(v1, v2, v3, material, light);
 
-    // try draw a triangle can be partially visible, fully visible, or completely invisible
-    pub fn draw_triangle(
-        &mut self,
-        v1: Vertex,
-        v2: Vertex,
-        v3: Vertex,
-        material: &Material,
-        light: Option<&Light>,
-    ) {
-        let v1_visible = v1.is_inside_view_frustum();
-        let v2_visible = v2.is_inside_view_frustum();
-        let v3_visible = v3.is_inside_view_frustum();
+        //             // # debug: draw with green triangles that are not broken
+        //             // let mut fill = Bitmap::new(1, 1);
+        //             // fill.fill(&Color::WHITE);
+        //             // self.fill_triangle(v1, v2, v3, &fill);
+        //             return vec![Triangle::new(v1, v2, v3)];
+        //         }
 
-        // all vertices are visible so draw the triangle as is
-        if v1_visible && v2_visible && v3_visible {
-            self.fill_triangle(v1, v2, v3, material, light);
+        //         // one or more (or all) vertices are not visible, we must clip them
+        //         let clipped_triangles = clip_triangle(v1, v2, v3);
+        //         if let Some(clipped_triangles) = clipped_triangles {
+        //             return clipped_triangles;
+        //         }
 
-            // # debug: draw with green triangles that are not broken
-            // let mut fill = Bitmap::new(1, 1);
-            // fill.fill(&Color::WHITE);
-            // self.fill_triangle(v1, v2, v3, &fill);
-        } else {
-            // one or more (or all) vertices are not visible, we must clip them
-            self.clip_triangle(v1, v2, v3, material, light);
-        }
-    }
+        //         // empty
+        //         return vec![];
+        //     })
+        //     .filter(|x| x.len() > 0)
+        //     .flatten()
+        //     .collect();
 
-    fn clip_triangle(
-        &mut self,
-        v1: Vertex,
-        v2: Vertex,
-        v3: Vertex,
-        material: &Material,
-        light: Option<&Light>,
-    ) {
-        // # 3d homogenous clipping
-        // https://fabiensanglard.net/polygon_codec/
-        //
-        // 1d clipping example:
-        // -1 |-----a----b--| +1  *c*   <--- point out of range
-        //
-        // a > -1 and a < +1
-        // b > -1 and b < +1
-        // c > -1 and c < +1 !!!
-        //
-        // d = lerp from b to c so that result is exactly 1
-        //
-        // -1 |-----a----b--d +1
-        //
-        // lerp formula
-        // L = linear interpolation factor
-        // 1 = `B`(1-L)+`C`*L
-        //
-        // extracted and simplified
-        // L = 1-B / (1-B)-(1-C)
-        //
-        // with perspective divide changes
-        // L = Wb - B / (Wb - B) - (Wc - C)
-        //
-        // note, we clip before perspective divide to avoid issues with linear interpolations / gradients
+        // for some reason non parallel is faster, I guess clipping isn't that expensive
+        let triangles: Vec<_> = mesh
+            .indices
+            .chunks_exact(3)
+            .map(|chunk| {
+                let mut v1 = mesh.vertices[chunk[0]];
+                let mut v2 = mesh.vertices[chunk[1]];
+                let mut v3 = mesh.vertices[chunk[2]];
 
-        let mut vertices = vec![v1, v2, v3];
+                // transform shadown-map-coords while the vertices are still in local space
+                if let Some(light) = light {
+                    let light_view_model_projection =
+                        Matrix4::multiply(&light.projection, transform);
+                    v1.shadow_map_coords =
+                        Matrix4::multiply_vector(&light_view_model_projection, v1.position);
+                    v2.shadow_map_coords =
+                        Matrix4::multiply_vector(&light_view_model_projection, v2.position);
+                    v3.shadow_map_coords =
+                        Matrix4::multiply_vector(&light_view_model_projection, v3.position);
+                }
 
-        // try clip vertices x
-        if !self.clip_polygon_axis(&mut vertices, 0) {
-            return;
-        }
-        // try clip vertices y
-        if !self.clip_polygon_axis(&mut vertices, 1) {
-            return;
-        }
-        // try clip vertices z
-        if !self.clip_polygon_axis(&mut vertices, 2) {
-            return;
-        }
+                // transform vertices into mvp
+                v1 = v1.transform(&mvp, identity);
+                v2 = v2.transform(&mvp, identity);
+                v3 = v3.transform(&mvp, identity);
 
-        // construct new vertices and fill the triangle
-        let initial_vertex = vertices[0];
+                let v1_visible = v1.is_inside_view_frustum();
+                let v2_visible = v2.is_inside_view_frustum();
+                let v3_visible = v3.is_inside_view_frustum();
 
-        // # creating triangles from multiple vertices
-        // given the points: A,B,C,D,E
-        // use formula: [A,B,C], [A,C,D], [A,D,E], etc
-        // start from 1(A) and connect it to 2 next ones (B,C)
-        for i in 1..vertices.len() - 1 {
-            let v1 = initial_vertex;
-            let v2 = vertices[i];
-            let v3 = vertices[i + 1];
+                // all vertices are visible so draw the triangle as is
+                if v1_visible && v2_visible && v3_visible {
+                    // self.fill_triangle(v1, v2, v3, material, light);
 
-            // # debug: draw with green triangles that are not broken.
-            // let mut bitmap = Bitmap::new(1, 1);
-            // bitmap.fill(&Color::RED);
+                    // # debug: draw with green triangles that are not broken
+                    // let mut fill = Bitmap::new(1, 1);
+                    // fill.fill(&Color::WHITE);
+                    // self.fill_triangle(v1, v2, v3, &fill);
+                    return vec![Triangle::new(v1, v2, v3)];
+                }
 
-            // fill the triangle
-            self.fill_triangle(v1, v2, v3, &material, light);
-        }
-    }
+                // one or more (or all) vertices are not visible, we must clip them
+                let clipped_triangles = clip_triangle(v1, v2, v3);
+                if let Some(clipped_triangles) = clipped_triangles {
+                    return clipped_triangles;
+                }
 
-    // clips for one particular axis
-    fn clip_polygon_axis(&self, vertices: &mut Vec<Vertex>, component: usize) -> bool {
-        let mut new_vertices = Vec::new();
+                // empty
+                return vec![];
+            })
+            .filter(|x| x.len() > 0)
+            .flatten()
+            .collect();
 
-        // clip on specific component on the +w
-        //
-        //          w (factor)
-        // prev v _ |
-        //  .       | -
-        //   .      |    - curr v
-        //    .     |  /
-        //     .    |/
-        //      .  /|
-        //          |
-
-        // the result will be in new_vertices
-        self.clip_polygon_component(vertices, component, 1.0, &mut new_vertices);
-        vertices.clear();
-
-        // no new-vertices so there are no vertices are in the screen
-        if new_vertices.is_empty() {
-            return false;
-        }
-
-        // clip on specific component on the -w
-        // with the newly creates vertices the result will be in the original vertices list
-        self.clip_polygon_component(&mut new_vertices, component, -1.0, vertices);
-        new_vertices.clear();
-
-        // return true when there are new vertices
-        return !vertices.is_empty();
-    }
-
-    // clips on components: x,y,z
-    fn clip_polygon_component(
-        &self,
-        vertices: &Vec<Vertex>,   // vertices to clip
-        component_index: usize,   // which component to clip on (x:0,y:1,z:2)
-        factor: f32,              // -w or +w
-        result: &mut Vec<Vertex>, // resulting clipped vertices
-    ) {
-        // start with the very last vertex in the list
-        // compare loop checks (prev-curr) v3-v1, v1-v2, v2->v3
-        let mut prev_vertex = &vertices[vertices.len() - 1];
-        // previous vertex component (x,y,z)
-        // factor allows us to reuse this code for -x and +x, (and -y +y, -z +z)
-        let mut prev_component = prev_vertex.get(component_index) * factor;
-        // whether or not the previous vertex is inside the cliping range
-        let mut prev_inside = prev_component <= prev_vertex.position.w;
-
-        for curr_vertex in vertices {
-            let curr_component = curr_vertex.get(component_index) * factor;
-            let curr_inside = curr_component <= curr_vertex.position.w;
-
-            // XOR if only one of the vertices is inside (current or previous)
-
-            if curr_inside ^ prev_inside {
-                // find the lerp amount to clip the vertex
-                // L = Wb - B / (Wb - B) - (Wc - C)
-                let b = prev_vertex.position.w - prev_component;
-                let c = curr_vertex.position.w - curr_component;
-                let lerp_amt = b / (b - c);
-
-                // clip vertex by lerping and push it into the result list
-                result.push(prev_vertex.lerp(curr_vertex, lerp_amt));
-            }
-
-            // current is inside the clipping range so add it into the result list
-            if curr_inside {
-                result.push(curr_vertex.clone());
-            }
-
-            prev_vertex = curr_vertex;
-            prev_component = curr_component;
-            prev_inside = curr_inside;
+        // @todo: run in parallel, it depends on many things, might need to split it up
+        for triangle in triangles {
+            self.fill_triangle(triangle.min, triangle.mid, triangle.max, material, light);
         }
     }
 
@@ -560,6 +469,10 @@ impl Renderer {
         let x_prestep = x_min as f32 - left.x;
 
         // define some gradient lerp values for the current scan line
+        let mut px = left.position.value.x + gradients.position.step.x.x * x_prestep;
+        let mut py = left.position.value.y + gradients.position.step.x.y * x_prestep;
+        let mut pz = left.position.value.z + gradients.position.step.x.z * x_prestep;
+
         let mut tex_coord_x = left.texcoords.value.x + gradients.texcoords.step.x.x * x_prestep;
         let mut tex_coord_y = left.texcoords.value.y + gradients.texcoords.step.x.y * x_prestep;
 
@@ -600,7 +513,9 @@ impl Renderer {
                 let src_y = ((tex_coord_y * z) * (material.bitmap.height - 1) as f32 + 0.5) as u32;
 
                 // copy the pixel from the bitmap
-                let mut tex_pixel = material.bitmap.get_pixel(src_x, src_y);
+                // let mut tex_pixel = material.bitmap.get_pixel(src_x, src_y);
+                let mut tex_pixel = Color::WHITE;
+                // let mut tex_pixel: Color = Vector4::new(px, py, pz, 1.0).into();
 
                 // shadow maping with perspective texture coord correction
                 if let Some(light) = light {
@@ -621,17 +536,18 @@ impl Renderer {
                         // tex_pixel = Color::newf(shadow, shadow, shadow, 1.0);
 
                         if shadow <= 0.5 {
-                            // - solution 1: additive
-                            // tex_pixel.r = (tex_pixel.r as f32 * 0.5) as u8;
-                            // tex_pixel.g = (tex_pixel.g as f32 * 0.5) as u8;
-                            // tex_pixel.b = (tex_pixel.b as f32 * 0.5) as u8;
+                            // ~ solution 1: additive
+                            tex_pixel.r = (tex_pixel.r as f32 * 0.1) as u8;
+                            tex_pixel.g = (tex_pixel.g as f32 * 0.1) as u8;
+                            tex_pixel.b = (tex_pixel.b as f32 * 0.1) as u8;
 
-                            if (x as u32 + y) % 2 == 0 {
-                                tex_pixel = Color::BLUE;
-                            }
-
-                            // - solution 2: fill
+                            // ~ solution 2: fill
                             // tex_pixel = Color::newf(0.2, 0.2, 0.2, 1.0);
+
+                            // ~ solution 3: dither
+                            // if (x as u32 + y) % 2 == 0 {
+                            //     tex_pixel = Color::BLUE;
+                            // }
                         }
                     } else {
                         // # debug: see where the shadow-map ends
@@ -681,6 +597,10 @@ impl Renderer {
             }
 
             // step all gradient values for this scan line
+            px += gradients.position.step.x.x;
+            py += gradients.position.step.x.y;
+            pz += gradients.position.step.x.z;
+
             tex_coord_x += gradients.texcoords.step.x.x;
             tex_coord_y += gradients.texcoords.step.x.y;
 
@@ -727,7 +647,11 @@ impl Renderer {
         let src_x = (normal_x * (shadow_map.width - 1) as f32 + 0.5) as u32;
         let src_y = (normal_y * (shadow_map.height - 1) as f32 + 0.5) as u32;
 
-        if src_x <= 0 || src_x >= shadow_map.width - 1 || src_y <= 0 || src_y >= shadow_map.height - 1 {
+        if src_x <= 0
+            || src_x >= shadow_map.width - 1
+            || src_y <= 0
+            || src_y >= shadow_map.height - 1
+        {
             return None;
         }
 

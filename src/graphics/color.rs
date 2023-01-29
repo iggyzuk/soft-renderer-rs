@@ -88,10 +88,10 @@ impl Color {
 impl From<Vector4> for Color {
     fn from(v: Vector4) -> Self {
         Self {
-            r: v.x as u8,
-            g: v.y as u8,
-            b: v.z as u8,
-            a: v.w as u8,
+            r: (v.x * 255.0) as u8,
+            g: (v.y * 255.0) as u8,
+            b: (v.z * 255.0) as u8,
+            a: (v.w * 255.0) as u8,
         }
     }
 }

@@ -1,9 +1,10 @@
 pub mod bitmap;
+pub mod clip;
 pub mod color;
 pub mod edge;
 pub mod gradients;
+pub mod light;
 pub mod material;
 pub mod mesh;
 pub mod scan_buffer;
 pub mod vertex;
-pub mod light;

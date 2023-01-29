@@ -2,26 +2,26 @@ use crate::math::linear_algebra::{matrix::Matrix4, vector::Vector4};
 
 #[derive(Debug, Default, Clone, Copy)]
 pub struct Vertex {
-    pub local_position: Vector4,
     pub position: Vector4,
     pub texcoords: Vector4,
     pub normal: Vector4,
+    pub shadow_map_coords: Vector4,
 }
 
 impl Vertex {
     pub fn new(position: Vector4, texcoords: Vector4, normal: Vector4) -> Self {
         return Self {
-            local_position: position,
             position,
             texcoords,
             normal,
+            shadow_map_coords: Vector4::ZERO,
         };
     }
 
     pub fn transform(mut self, transform_mat: &Matrix4, normal_mat: &Matrix4) -> Self {
-        self.local_position = Matrix4::multiply_vector(normal_mat, self.normal);
         self.position = Matrix4::multiply_vector(transform_mat, self.position);
         self.normal = Matrix4::multiply_vector(normal_mat, self.normal); // for light direction
+        // self.shadow_map_coords = Matrix4::multiply_vector(normal_mat, self.shadow_map_coords); // for light direction
         return self;
     }
 
@@ -66,7 +66,9 @@ impl Vertex {
             self.texcoords.lerp(other.texcoords, lerp_amt),
             self.normal.lerp(other.normal, lerp_amt),
         );
-        vertex.local_position = vertex.local_position.lerp(other.local_position, lerp_amt);
+
+        // lerp with shadow-map-coords
+        vertex.shadow_map_coords = self.shadow_map_coords.lerp(other.shadow_map_coords, lerp_amt);
 
         return vertex;
     }

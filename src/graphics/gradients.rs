@@ -104,12 +104,15 @@ impl Gradients {
         // using the same mvp matrix that the light used to create the shadow-map
         let mut shadow_map_coords = Gradient::default();
         if let Some(light) = light {
-            // shadow_map_coords.value[0] = triangle.min.shadow_map_coords;
-            // shadow_map_coords.value[1] = triangle.mid.shadow_map_coords;
-            // shadow_map_coords.value[2] = triangle.max.shadow_map_coords;
-            shadow_map_coords.value[0] = Matrix4::multiply_vector(&light.projection, triangle.min.local_position);
-            shadow_map_coords.value[1] = Matrix4::multiply_vector(&light.projection, triangle.mid.local_position);
-            shadow_map_coords.value[2] = Matrix4::multiply_vector(&light.projection, triangle.max.local_position);
+            shadow_map_coords.value[0] = triangle.min.shadow_map_coords* one_over_z.value[0];
+            shadow_map_coords.value[1] = triangle.mid.shadow_map_coords* one_over_z.value[1];
+            shadow_map_coords.value[2] = triangle.max.shadow_map_coords* one_over_z.value[2];
+            // shadow_map_coords.value[0] = triangle.min.local_position;
+            // shadow_map_coords.value[1] = triangle.mid.local_position;
+            // shadow_map_coords.value[2] = triangle.max.local_position;
+            // shadow_map_coords.value[0] = Matrix4::multiply_vector(&light.projection, triangle.min.local_position);
+            // shadow_map_coords.value[1] = Matrix4::multiply_vector(&light.projection, triangle.mid.local_position);
+            // shadow_map_coords.value[2] = Matrix4::multiply_vector(&light.projection, triangle.max.local_position);
         }
 
         // triangle gradient interpolation formula to find the extra points

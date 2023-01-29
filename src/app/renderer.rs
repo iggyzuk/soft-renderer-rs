@@ -82,10 +82,42 @@ impl Renderer {
         //     .set_pixel(pos.x as u32, pos.y as u32, &Color::WHITE);
 
         // @todo: run this in parallel, will need a RwLock for color/depth buffers
+        let identity = &Matrix4::new_identity();
         for chunk in mesh.indices.chunks_exact(3) {
-            let mut v1 = mesh.vertices[chunk[0]].transform(&mvp, transform);
-            let mut v2 = mesh.vertices[chunk[1]].transform(&mvp, transform);
-            let mut v3 = mesh.vertices[chunk[2]].transform(&mvp, transform);
+            // let v1 = mesh.vertices[chunk[0]].transform(&mvp, &identity);
+            // let v2 = mesh.vertices[chunk[1]].transform(&mvp, &identity);
+            // let v3 = mesh.vertices[chunk[2]].transform(&mvp, &identity);
+
+            // create new vertices
+            let mut v1 = mesh.vertices[chunk[0]];
+            let mut v2 = mesh.vertices[chunk[1]];
+            let mut v3 = mesh.vertices[chunk[2]];
+
+            // transform shadown-map-coords while the vertices are still in local space
+            if let Some(light) = light {
+                let light_view_model_projection = Matrix4::multiply(&light.projection, transform);
+                v1.shadow_map_coords =
+                    Matrix4::multiply_vector(&light_view_model_projection, v1.position);
+                v2.shadow_map_coords =
+                    Matrix4::multiply_vector(&light_view_model_projection, v2.position);
+                v3.shadow_map_coords =
+                    Matrix4::multiply_vector(&light_view_model_projection, v3.position);
+            }
+
+            // // transform local-position to be in world position of the current model (not mvp)
+            // v1.local_position = Matrix4::multiply_vector(transform, v1.position);
+            // v2.local_position = Matrix4::multiply_vector(transform, v2.position);
+            // v3.local_position = Matrix4::multiply_vector(transform, v3.position);
+
+            // transform vertices with mvp
+            // v1.position = Matrix4::multiply_vector(&mvp, v1.position);
+            // v2.position = Matrix4::multiply_vector(&mvp, v2.position);
+            // v3.position = Matrix4::multiply_vector(&mvp, v3.position);
+
+            // transform vertices into mvp
+            v1 = v1.transform(&mvp, identity);
+            v2 = v2.transform(&mvp, identity);
+            v3 = v3.transform(&mvp, identity);
 
             // // transform shadown-map-coords while the vertices are still in local space
             // if let Some(light) = light {
@@ -93,10 +125,9 @@ impl Renderer {
             //     // v2.shadow_map_coords = Matrix4::multiply_vector(&light.projection, v2.position);
             //     // v3.shadow_map_coords = Matrix4::multiply_vector(&light.projection, v3.position);
 
-            //     // or just save the local space positions
-            //     v1.local_position = v1.position;
-            //     v2.local_position = v2.position;
-            //     v3.local_position = v3.position;
+            //     // v1.local_position = Matrix4::multiply_vector(transform, v1.local_position);
+            //     // v2.local_position = Matrix4::multiply_vector(transform, v2.local_position);
+            //     // v3.local_position = Matrix4::multiply_vector(transform, v3.local_position);
             // }
 
             // // finally transform the vertex (position will be in model-view-projection)
@@ -551,9 +582,9 @@ impl Renderer {
         let x_prestep = x_min as f32 - left.x;
 
         // define some gradient lerp values for the current scan line
-        let mut pos_x = left.position.value.x + gradients.position.step.x.x * x_prestep;
-        let mut pos_y = left.position.value.y + gradients.position.step.x.y * x_prestep;
-        let mut pos_z = left.position.value.z + gradients.position.step.x.z * x_prestep;
+        // let mut pos_x = left.position.value.x + gradients.position.step.x.x * x_prestep;
+        // let mut pos_y = left.position.value.y + gradients.position.step.x.y * x_prestep;
+        // let mut pos_z = left.position.value.z + gradients.position.step.x.z * x_prestep;
 
         let mut tex_coord_x = left.texcoords.value.x + gradients.texcoords.step.x.x * x_prestep;
         let mut tex_coord_y = left.texcoords.value.y + gradients.texcoords.step.x.y * x_prestep;
@@ -588,36 +619,75 @@ impl Renderer {
         // }
 
         let sample_shadow_map = |shadow_map: &Bitmap, x: u32, y: u32, compare: f32| -> f32 {
+            // let index = ((x + y * self.width) * 4) as usize;
+
+            // if index < 0 || index >= (self.width * self.height * 4) as usize {
+            //     panic!("should never sample outside of the shadow_map");
+            // }
+
+            // get the pixel color for now (depth)
+            // return shadow_map.get_pixel(x, y).r as f32;
+
             // the z value of the current pixel
-            let mapped_compare = (compare * 10.0) as u8;
+            let mapped_compare = (compare * 255.0) as u8;
+
+            // println!(
+            //     "x:{},y:{} -> pix:{},cmpr:{}",
+            //     x,
+            //     y,
+            //     shadow_map.get_pixel(x, y).r,
+            //     mapped_compare
+            // );
+
             // compare with what is inside the shadow map
+            // dbg!(shadow_map.get_pixel(x, y).r);
+            // assert_eq!(shadow_map.get_pixel(x, y).r < 255.0);
             return if shadow_map.get_pixel(x, y).r < mapped_compare {
-                1.0
-            } else {
                 0.0
+            } else {
+                1.0
             };
         };
 
         // let one_over_z_copy = one_over_z;
 
-        let calc_shadow_amount = |shadow_map: &Bitmap, initial_shadow_map_coords: Vector4| -> f32 {
+        let calc_shadow_amount = |shadow_map: &Bitmap,
+                                  initial_shadow_map_coords: Vector4|
+         -> Option<f32> {
             // I'm not doing perspective divide!
             // might need to do perspective divide on all 3 components
-            let x = initial_shadow_map_coords.x; // / initial_shadow_map_coords.w;
-            let y = initial_shadow_map_coords.y; // / initial_shadow_map_coords.w;
-            let z = initial_shadow_map_coords.z; // / initial_shadow_map_coords.w; // this might need to be the depth
+            let x = initial_shadow_map_coords.x;// initial_shadow_map_coords.w;
+            let y = initial_shadow_map_coords.y;// initial_shadow_map_coords.w;
+            let z = initial_shadow_map_coords.z;// initial_shadow_map_coords.w; // this might need to be the depth
 
             // let z_copy = 1.0 / one_over_z_copy;
             // let src_x = ((x * z_copy) * (shadow_map.width - 1) as f32 + 0.5) as u32;
             // let src_y = ((y * z_copy) * (shadow_map.height - 1) as f32 + 0.5) as u32;
 
-            let src_x = (x * (shadow_map.width - 1) as f32 + 0.5) as u32;
-            let src_y = (y * (shadow_map.height - 1) as f32 + 0.5) as u32;
+            // println!("{},{}", x, y);
+
+            let src_x = ((x * 0.5 + 0.5) * (shadow_map.width - 1) as f32 + 0.5) as u32;
+            let src_y = ((-y * 0.5 + 0.5) * (shadow_map.height - 1) as f32 + 0.5) as u32;
 
             // println!("{:?}", initial_shadow_map_coords);
             // println!("{:?},{:?},{:?}", x, y, z);
 
-            return sample_shadow_map(shadow_map, src_x, src_y, z);
+            // println!("{},{}", src_x, src_y);
+
+            // bug: cutting out too early
+            // if src_x < 0 || src_x > shadow_map.width || src_y <= 0 || src_x >= shadow_map.height {
+            //     return None;
+            // }
+
+            // println!("{}, {}", src_x, src_y);
+
+            // let index = ((src_x + src_y * self.width) * 4) as usize;
+
+            // if index < 0 || index >= (self.width * self.height * 4) as usize {
+            //     return None;
+            // }
+
+            return Some(sample_shadow_map(shadow_map, src_x, src_y, z));
         };
 
         for x in x_min..x_max {
@@ -635,6 +705,7 @@ impl Renderer {
                 let src_y = ((tex_coord_y * z) * (material.bitmap.height - 1) as f32 + 0.5) as u32;
 
                 // copy the pixel from the bitmap
+                // let mut tex_pixel = Color::RED;
                 let mut tex_pixel = material.bitmap.get_pixel(src_x, src_y);
 
                 // # TOP PRIORITY:
@@ -645,13 +716,26 @@ impl Renderer {
                     let shadow_map = &light.bitmap;
 
                     let initial = Vector4::new(
-                        shadow_map_coords_x,
-                        shadow_map_coords_y,
-                        shadow_map_coords_z,
+                        shadow_map_coords_x * z, // / shadow_map_coords_w,
+                        shadow_map_coords_y * z, // / shadow_map_coords_w,
+                        shadow_map_coords_z * z, // / shadow_map_coords_w,
                         1.0,
                     );
 
+                    // let initial = Matrix4::multiply_vector(&light.projection, initial);
+
+                    // dbg!(initial);
+
+                    // tex_pixel = Color::newf(initial.x, initial.y, initial.z, 1.0);
+
                     let shadow = calc_shadow_amount(shadow_map, initial);
+                    if let Some(shadow) = shadow {
+                        // tex_pixel = Color::newf(shadow, shadow, shadow, 1.0);
+                        tex_pixel = Color::newf(0.2, 0.2, 0.2, shadow);
+                    } else {
+                        tex_pixel = Color::RED;
+                    }
+
                     // let shadow = shadow_map_coords_z;
                     // dbg!(shadow_map_coords_z);
 
@@ -678,11 +762,11 @@ impl Renderer {
                     // tex_pixel.g = ((tex_pixel.g as f32) * fy) as u8;
                     // tex_pixel.b = ((tex_pixel.b as f32) * fz) as u8;
 
-                    if shadow <= 0.0 {
-                        tex_pixel = Color::GREEN;
-                    } else {
-                        tex_pixel = Color::BLUE;
-                    }
+                    // if shadow <= 0.0 {
+                    //     tex_pixel = Color::WHITE;
+                    // } else {
+                    //     tex_pixel = Color::newf(0.2, 0.2, 0.2, 1.0);
+                    // }
 
                     // 1. sample what's inside the texture for point shadow_v_x and shadow_v_y and depth
                     //     note: it needs perspective divide
@@ -805,9 +889,9 @@ impl Renderer {
             }
 
             // step all gradient values for this scan line
-            pos_x += gradients.position.step.x.x;
-            pos_y += gradients.position.step.x.y;
-            pos_z += gradients.position.step.x.z;
+            // pos_x += gradients.position.step.x.x;
+            // pos_y += gradients.position.step.x.y;
+            // pos_z += gradients.position.step.x.z;
 
             tex_coord_x += gradients.texcoords.step.x.x;
             tex_coord_y += gradients.texcoords.step.x.y;
@@ -825,7 +909,7 @@ impl Renderer {
         // # debug: draw wireframe
         // @todo: fix the pixel bleed on opposite edge
         if self.debug.wireframe {
-            let color = Color::newf(1.0, 1.0, 1.0, 0.1);
+            let color = Color::newf(1.0, 1.0, 1.0, 0.01);
             self.color_buffer.set_pixel(x_min, y, &color);
             self.color_buffer.set_pixel(x_max, y, &color);
         }

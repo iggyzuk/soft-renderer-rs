@@ -85,7 +85,7 @@ impl World {
         let mario = Instance::new(
             Rc::clone(&mario_mesh_resource),
             Rc::clone(&mario_bitmap_resource),
-            false,
+            true,
         );
 
         world.instances.push(mario);
@@ -93,10 +93,10 @@ impl World {
         let box_mesh_res = Self::make_mesh_res("./assets/box.obj");
 
         // ground
-        // let mut instance = world.make_instance(&box_mesh_res, &bitmap_resource, false);
-        // instance.transform.translate(0.0, -0.5, 0.0);
-        // instance.transform.scale(40.0, 0.5, 40.0);
-        // world.instances.push(instance);
+        let mut instance = world.make_instance(&box_mesh_res, &bitmap_resource, false);
+        instance.transform.translate(0.0, -0.5, 0.0);
+        instance.transform.scale(40.0, 0.5, 40.0);
+        world.instances.push(instance);
 
         // simple box
         // create a checker-board bitmap
@@ -173,18 +173,18 @@ impl World {
             true,
         );
 
-        // // create a sky bitmap
-        // let mut bitmap = Bitmap::new(1, 128);
-        // for y in 0..bitmap.height {
-        //     let l = lerp(2.0, 0.2, y as f32 / bitmap.height as f32);
-        //     bitmap.set_pixel(0, y, &Color::newf(l * 0.1, l * 0.7, l, 1.0));
-        // }
+        // create a sky bitmap
+        let mut bitmap = Bitmap::new(1, 128);
+        for y in 0..bitmap.height {
+            let l = lerp(2.0, 0.2, y as f32 / bitmap.height as f32);
+            bitmap.set_pixel(0, y, &Color::newf(l * 0.1, l * 0.7, l, 1.0));
+        }
 
-        // let bitmap_resource = Rc::new(Box::new(bitmap));
+        let bitmap_resource = Rc::new(Box::new(bitmap));
 
-        // let sky = Self::make_mesh_res("./assets/skydome.obj");
-        // let instance = world.make_instance(&sky, &bitmap_resource, false);
-        // world.instances.push(instance);
+        let sky = Self::make_mesh_res("./assets/skydome.obj");
+        let instance = world.make_instance(&sky, &bitmap_resource, false);
+        world.instances.push(instance);
 
         return world;
     }
@@ -209,11 +209,11 @@ impl World {
         // }
 
         for instance in self.instances.iter_mut().take(1) {
-            instance
-                .transform
-                .translate(self.time.cos() * 0.01, 0.0, self.time.sin() * 0.01);
+            // instance
+            //     .transform
+            //     .translate(self.time.cos() * 0.01, 0.0, self.time.sin() * 0.01);
 
-            instance.transform.rotate_y(360.0 / 8.0 * dt);
+            instance.transform.rotate_y(360.0 / 4.0 * dt);
         }
     }
 
@@ -228,14 +228,14 @@ impl World {
 
         // # shadow mapping experiment
         // let shadow_projection = Matrix4::perspective(100.0, self.width as f32 / self.height as f32, 0.1, 100.0);
-        let range = 10.0;
-        let shadow_projection = Matrix4::orthographic(-range, range, -range, range, 10., -10.);
+        let range = 5.0;
+        let shadow_projection = Matrix4::orthographic(-range, range, -range, range, 10.0, -10.0);
         // let shadow_projection = Matrix4::perspective(130.0, self.width as f32 / self.height as f32, 0.1, 100.0);
 
         let mut shadow_light_transform = Matrix4::new_identity();
         #[rustfmt::skip]
         // shadow_light_transform.look_at(self.camera.position, self.camera.position + self.camera.direction, Vector4::UP);
-        shadow_light_transform.look_at(Vector4::new(1.58, 4.52, 2.7, 0.0), Vector4::new(-0.42, -0.73, -0.53, 0.0), Vector4::UP);
+        shadow_light_transform.look_at(Vector4::new(1.58, 4.52, 2.7, 0.0), Vector4::new(-0.5, -0.8, -0.6, 0.0), Vector4::UP);
 
         // dbg!(self.camera.position);
         // dbg!(self.camera.direction);

@@ -9,9 +9,9 @@ scan buffer (solid fill)
     how to convert a triangle into a scan buffer?
     #7 rewatch, reimplement
 
-[ ]understand the gradient formula
+[~]understand the gradient formula
     - it's a slope, X and Y diffs, steps
-[ ]understand matrix look-at function
+[~]understand matrix look-at function
 [x]understand how the triangles clipped on the corners
 [ ]remove pub in unnecessary places
 [ ]fix camera movements
@@ -23,7 +23,7 @@ scan buffer (solid fill)
 [ ]more debug variables in renderer
     [ ]egui: from ref
     [ ]remove main.cpp and references
-[ ]implement shadow mapping
+[x]implement shadow mapping
     https://www.youtube.com/watch?v=EsccgeUpdsM&list=PLEETnX-uPtBVG1ao7GCESh2vOayJXDbAl&index=7
 
 example scene with automatic motion: https://github.com/HannesMann/keyframe

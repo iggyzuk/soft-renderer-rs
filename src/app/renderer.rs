@@ -416,7 +416,7 @@ impl Renderer {
     ) {
         // construct gradients for the triangle
         // it contains tex-coords, one-over-z, depth, light-amt for all 3 vertices
-        let gradients = Gradients::new(Triangle::new(min.clone(), mid.clone(), max.clone()), light);
+        let gradients = Gradients::new(Triangle::new(min.clone(), mid.clone(), max.clone()));
 
         // # debug: switch textures to see how triangles are drawn
         // make sure to change &bitmap to &debug_tex_1/&debug_tex_1 in scan_edges(...)
@@ -582,10 +582,6 @@ impl Renderer {
         let x_prestep = x_min as f32 - left.x;
 
         // define some gradient lerp values for the current scan line
-        // let mut pos_x = left.position.value.x + gradients.position.step.x.x * x_prestep;
-        // let mut pos_y = left.position.value.y + gradients.position.step.x.y * x_prestep;
-        // let mut pos_z = left.position.value.z + gradients.position.step.x.z * x_prestep;
-
         let mut tex_coord_x = left.texcoords.value.x + gradients.texcoords.step.x.x * x_prestep;
         let mut tex_coord_y = left.texcoords.value.y + gradients.texcoords.step.x.y * x_prestep;
 
@@ -599,8 +595,6 @@ impl Renderer {
             left.shadow_map_coords.value.y + gradients.shadow_map_coords.step.x.y * x_prestep;
         let mut shadow_map_coords_z =
             left.shadow_map_coords.value.z + gradients.shadow_map_coords.step.x.z * x_prestep;
-        let mut shadow_map_coords_w =
-            left.shadow_map_coords.value.w + gradients.shadow_map_coords.step.x.w * x_prestep;
 
         // let mut shadow_d = left.shadow_d.value + gradients.shadow_d.step.x * x_prestep;
 
@@ -649,46 +643,26 @@ impl Renderer {
             };
         };
 
-        // let one_over_z_copy = one_over_z;
+        let calc_shadow_amount =
+            |shadow_map: &Bitmap, initial_shadow_map_coords: Vector4| -> Option<f32> {
+                let x = initial_shadow_map_coords.x;
+                let y = initial_shadow_map_coords.y;
+                let z = initial_shadow_map_coords.z;
 
-        let calc_shadow_amount = |shadow_map: &Bitmap,
-                                  initial_shadow_map_coords: Vector4|
-         -> Option<f32> {
-            // I'm not doing perspective divide!
-            // might need to do perspective divide on all 3 components
-            let x = initial_shadow_map_coords.x;// initial_shadow_map_coords.w;
-            let y = initial_shadow_map_coords.y;// initial_shadow_map_coords.w;
-            let z = initial_shadow_map_coords.z;// initial_shadow_map_coords.w; // this might need to be the depth
+                let src_x = ((x * 0.5 + 0.5) * (shadow_map.width - 1) as f32 + 0.5) as u32;
+                let src_y = ((-y * 0.5 + 0.5) * (shadow_map.height - 1) as f32 + 0.5) as u32;
 
-            // let z_copy = 1.0 / one_over_z_copy;
-            // let src_x = ((x * z_copy) * (shadow_map.width - 1) as f32 + 0.5) as u32;
-            // let src_y = ((y * z_copy) * (shadow_map.height - 1) as f32 + 0.5) as u32;
+                // println!("{},{}", src_x, src_y);
 
-            // println!("{},{}", x, y);
+                // bug: cutting out too early
+                // if src_x < 0 || src_x > shadow_map.width || src_y <= 0 || src_x >= shadow_map.height {
+                //     return None;
+                // }
 
-            let src_x = ((x * 0.5 + 0.5) * (shadow_map.width - 1) as f32 + 0.5) as u32;
-            let src_y = ((-y * 0.5 + 0.5) * (shadow_map.height - 1) as f32 + 0.5) as u32;
+                // println!("{}, {}", src_x, src_y);
 
-            // println!("{:?}", initial_shadow_map_coords);
-            // println!("{:?},{:?},{:?}", x, y, z);
-
-            // println!("{},{}", src_x, src_y);
-
-            // bug: cutting out too early
-            // if src_x < 0 || src_x > shadow_map.width || src_y <= 0 || src_x >= shadow_map.height {
-            //     return None;
-            // }
-
-            // println!("{}, {}", src_x, src_y);
-
-            // let index = ((src_x + src_y * self.width) * 4) as usize;
-
-            // if index < 0 || index >= (self.width * self.height * 4) as usize {
-            //     return None;
-            // }
-
-            return Some(sample_shadow_map(shadow_map, src_x, src_y, z));
-        };
+                return Some(sample_shadow_map(shadow_map, src_x, src_y, z));
+            };
 
         for x in x_min..x_max {
             // get the flat index to find the pixel in the depth buffer
@@ -705,163 +679,55 @@ impl Renderer {
                 let src_y = ((tex_coord_y * z) * (material.bitmap.height - 1) as f32 + 0.5) as u32;
 
                 // copy the pixel from the bitmap
-                // let mut tex_pixel = Color::RED;
                 let mut tex_pixel = material.bitmap.get_pixel(src_x, src_y);
-
-                // # TOP PRIORITY:
-                // make sure the gradient shadow map coordinates are correctly interpolating across the vertices
 
                 // shadow maping
                 if let Some(light) = light {
-                    let shadow_map = &light.bitmap;
-
                     let initial = Vector4::new(
-                        shadow_map_coords_x * z, // / shadow_map_coords_w,
-                        shadow_map_coords_y * z, // / shadow_map_coords_w,
-                        shadow_map_coords_z * z, // / shadow_map_coords_w,
-                        1.0,
+                        shadow_map_coords_x * z,
+                        shadow_map_coords_y * z,
+                        shadow_map_coords_z * z,
+                        0.0,
                     );
 
-                    // let initial = Matrix4::multiply_vector(&light.projection, initial);
-
-                    // dbg!(initial);
-
+                    // # debug: see shadow map coords (they're nice and smooth)
                     // tex_pixel = Color::newf(initial.x, initial.y, initial.z, 1.0);
 
-                    let shadow = calc_shadow_amount(shadow_map, initial);
+                    let shadow = calc_shadow_amount(&light.bitmap, initial);
+
                     if let Some(shadow) = shadow {
-                        // tex_pixel = Color::newf(shadow, shadow, shadow, 1.0);
-                        tex_pixel = Color::newf(0.2, 0.2, 0.2, shadow);
+                        // # debug: see the worls through the shadow-map
+                        tex_pixel = Color::newf(shadow, shadow, shadow, 1.0);
+
+                        if shadow <= 0.5 {
+                            // - solution 1: additive
+                            // tex_pixel.r = (tex_pixel.r as f32 * 0.5) as u8;
+                            // tex_pixel.g = (tex_pixel.g as f32 * 0.5) as u8;
+                            // tex_pixel.b = (tex_pixel.b as f32 * 0.5) as u8;
+
+                            // - solution 2: fill
+                            // tex_pixel = Color::newf(0.2, 0.2, 0.2, 1.0);
+                        }
                     } else {
                         tex_pixel = Color::RED;
                     }
-
-                    // let shadow = shadow_map_coords_z;
-                    // dbg!(shadow_map_coords_z);
-
-                    // # debug: texture coords
-                    // let f = 1.0;
-                    // let fx = (tex_coord_x * z) / f;
-                    // let fy = (tex_coord_y * z) / f;
-                    // let fz = 0.0;
-
-                    // # debug: draw normals
-                    // let f = 1.0;
-                    // let fx = (shadow_map_coords_x) / f;
-                    // let fy = (shadow_map_coords_y) / f;
-                    // let fz = (shadow_map_coords_z) / f;
-
-                    // # EXPECTED: smaller values are darker in light space
-                    // top of mario should be more white and darker as it goes further
-
-                    // WHY: does light_amt, and depth work so well?
-                    // I think the vertices in draw triangle have already been transformed into the camera view
-                    // so the positions even though lerped stay local to the view
-
-                    // tex_pixel.r = ((tex_pixel.r as f32) * fx) as u8;
-                    // tex_pixel.g = ((tex_pixel.g as f32) * fy) as u8;
-                    // tex_pixel.b = ((tex_pixel.b as f32) * fz) as u8;
-
-                    // if shadow <= 0.0 {
-                    //     tex_pixel = Color::WHITE;
-                    // } else {
-                    //     tex_pixel = Color::newf(0.2, 0.2, 0.2, 1.0);
-                    // }
-
-                    // 1. sample what's inside the texture for point shadow_v_x and shadow_v_y and depth
-                    //     note: it needs perspective divide
-                    // 2. compare the depth
-
-                    // let src_x = ((tex_coord_x * z) * (light.bitmap.width - 1) as f32 + 0.5) as u32;
-                    // let src_y = ((tex_coord_y * z) * (light.bitmap.height - 1) as f32 + 0.5) as u32;
-                    // let mut existing_shadow_pixel = light.bitmap.get_pixel(src_x, src_y);
-                    // existing_shadow_pixel.a = 200;
-                    // self.color_buffer.set_pixel(x, y, &existing_shadow_pixel);
-
-                    // let current_shadow_v = Matrix4::multiply_vector(
-                    //     &light.projection,
-                    //     Vector4::new(shadow_v_x, shadow_v_y, 0.0, 1.0),
-                    // );
-
-                    // let src_x =
-                    //     ((current_shadow_v.x) * (light.bitmap.width - 1) as f32 + 0.5) as u32;
-                    // let src_y =
-                    //     ((current_shadow_v.y) * (light.bitmap.height - 1) as f32 + 0.5) as u32;
-                    // let shadow_pixel = light.bitmap.get_pixel(src_x, src_y);
-
-                    // if shadow_pixel.r > existing_shadow_pixel.r {
-                    //     self.color_buffer.set_pixel(x, y, &Color::BLUE);
-                    // } else {
-                    //     self.color_buffer.set_pixel(x, y, &Color::GREEN);
-                    // }
-
-                    // let src_x =
-                    //     ((current_shadow_v.x) * (light.bitmap.width - 1) as f32 + 0.5) as u32;
-                    // let src_y =
-                    //     ((current_shadow_v.y) * (light.bitmap.height - 1) as f32 + 0.5) as u32;
-                    // let shadow_pixel = light.bitmap.get_pixel(src_x, src_y);
-
-                    // let src_x = ((tex_coord_x * z) * (light.bitmap.width - 1) as f32 + 0.5) as u32;
-                    // let src_y = ((tex_coord_y * z) * (light.bitmap.height - 1) as f32 + 0.5) as u32;
-                    // let mut existing_shadow_pixel = light.bitmap.get_pixel(src_x, src_y);
-                    // existing_shadow_pixel.a = 200;
-                    // self.color_buffer.set_pixel(x, y, &existing_shadow_pixel);
-
-                    // let current_shadow_v = Matrix4::multiply_vector(
-                    //     &light.projection,
-                    //     Vector4::new(shadow_v_x, shadow_v_y, 0.0, 1.0),
-                    // );
-
-                    // let src_x =
-                    //     ((current_shadow_v.x) * (light.bitmap.width - 1) as f32 + 0.5) as u32;
-                    // let src_y =
-                    //     ((current_shadow_v.y) * (light.bitmap.height - 1) as f32 + 0.5) as u32;
-                    // let shadow_pixel = light.bitmap.get_pixel(src_x, src_y);
-
-                    // if shadow_pixel.r > existing_shadow_pixel.r {
-                    //     self.color_buffer.set_pixel(x, y, &Color::BLUE);
-                    // } else {
-                    //     self.color_buffer.set_pixel(x, y, &Color::GREEN);
-                    // }
-
-                    // let current_shadow_v = Matrix4::multiply_vector(
-                    //     &light.projection,
-                    //     Vector4::new(shadow_v_x, shadow_v_y, 0.0, 1.0),
-                    // );
-
-                    // #[rustfmt::skip]
-                    // let src_x = ((current_shadow_v.x * z * 0.5 + 0.5) * (light.bitmap.width - 1) as f32 + 0.5) as u32;
-                    // #[rustfmt::skip]
-                    // let src_y = ((current_shadow_v.y * z * 0.5 + 0.5) * (light.bitmap.height - 1) as f32 + 0.5) as u32;
-
-                    // let shadow_pixel = light.bitmap.get_pixel(src_x, src_y);
-
-                    // if shadow_pixel.r > existing_shadow_pixel.r {
-                    //     self.color_buffer
-                    //         .set_pixel(x, y, &Color::newf(0.0, 0.0, 1.0, 0.5));
-                    // } else {
-                    //     // self.color_buffer
-                    //     //     .set_pixel(x, y, &Color::newf(0.0, 1.0, 0.0, 0.5));
-                    // }
-
-                    // existing_shadow_pixel.a = 200;
-
-                    // self.color_buffer.set_pixel(x, y, &existing_shadow_pixel);
                 }
 
-                self.color_buffer.set_pixel(x, y, &tex_pixel);
+                // # debug: texture coords
+                // tex_pixel = Color::newf(tex_coord_x * z, tex_coord_y * z, 0.0, 1.0);
 
-                // self.color_buffer.set_pixel(x, y, &tex_pixel);
+                // // # debug: draw normals
+                // tex_pixel = Color::newf(normal_x, normal_y, normal_z, 1.0);
 
                 // light it up
-                // if material.light {
-                //     tex_pixel.r = (tex_pixel.r as f32 * light_amt) as u8;
-                //     tex_pixel.g = (tex_pixel.g as f32 * light_amt) as u8;
-                //     tex_pixel.b = (tex_pixel.b as f32 * light_amt) as u8;
-                // }
+                if material.light {
+                    tex_pixel.r = (tex_pixel.r as f32 * light_amt) as u8;
+                    tex_pixel.g = (tex_pixel.g as f32 * light_amt) as u8;
+                    tex_pixel.b = (tex_pixel.b as f32 * light_amt) as u8;
+                }
 
                 // finally set pixel in the color buffer
-                // self.color_buffer.set_pixel(x, y, &tex_pixel);
+                self.color_buffer.set_pixel(x, y, &tex_pixel);
             } else {
                 // # debug: we can draw a blue pixel when the depth test fails what it means is that
                 // we tried to draw something in a screen position where the z-buffer already has a lower value
@@ -889,10 +755,6 @@ impl Renderer {
             }
 
             // step all gradient values for this scan line
-            // pos_x += gradients.position.step.x.x;
-            // pos_y += gradients.position.step.x.y;
-            // pos_z += gradients.position.step.x.z;
-
             tex_coord_x += gradients.texcoords.step.x.x;
             tex_coord_y += gradients.texcoords.step.x.y;
 
@@ -903,7 +765,6 @@ impl Renderer {
             shadow_map_coords_x += gradients.shadow_map_coords.step.x.x;
             shadow_map_coords_y += gradients.shadow_map_coords.step.x.y;
             shadow_map_coords_z += gradients.shadow_map_coords.step.x.z;
-            shadow_map_coords_w += gradients.shadow_map_coords.step.x.w;
         }
 
         // # debug: draw wireframe

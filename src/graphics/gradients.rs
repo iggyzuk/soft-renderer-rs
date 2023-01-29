@@ -1,9 +1,6 @@
 use std::ops::{Mul, Sub};
 
-use crate::math::{
-    clamp,
-    linear_algebra::{matrix::Matrix4, vector::Vector4},
-};
+use crate::math::{clamp, linear_algebra::vector::Vector4};
 
 use super::{light::Light, vertex::Vertex};
 
@@ -60,7 +57,7 @@ pub struct Triangle {
 }
 
 impl Gradients {
-    pub fn new(triangle: Triangle, light: Option<&Light>) -> Self {
+    pub fn new(triangle: Triangle) -> Self {
         let mut position = Gradient::default();
         position.value[0] = triangle.min.normal;
         position.value[1] = triangle.mid.normal;
@@ -103,17 +100,9 @@ impl Gradients {
         // we calculate it by transforming each vertex
         // using the same mvp matrix that the light used to create the shadow-map
         let mut shadow_map_coords = Gradient::default();
-        if let Some(light) = light {
-            shadow_map_coords.value[0] = triangle.min.shadow_map_coords* one_over_z.value[0];
-            shadow_map_coords.value[1] = triangle.mid.shadow_map_coords* one_over_z.value[1];
-            shadow_map_coords.value[2] = triangle.max.shadow_map_coords* one_over_z.value[2];
-            // shadow_map_coords.value[0] = triangle.min.local_position;
-            // shadow_map_coords.value[1] = triangle.mid.local_position;
-            // shadow_map_coords.value[2] = triangle.max.local_position;
-            // shadow_map_coords.value[0] = Matrix4::multiply_vector(&light.projection, triangle.min.local_position);
-            // shadow_map_coords.value[1] = Matrix4::multiply_vector(&light.projection, triangle.mid.local_position);
-            // shadow_map_coords.value[2] = Matrix4::multiply_vector(&light.projection, triangle.max.local_position);
-        }
+        shadow_map_coords.value[0] = triangle.min.shadow_map_coords * one_over_z.value[0];
+        shadow_map_coords.value[1] = triangle.mid.shadow_map_coords * one_over_z.value[1];
+        shadow_map_coords.value[2] = triangle.max.shadow_map_coords * one_over_z.value[2];
 
         // triangle gradient interpolation formula to find the extra points
         // https://youtu.be/AysDWKF3CBs

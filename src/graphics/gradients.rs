@@ -2,15 +2,7 @@ use std::ops::{Mul, Sub};
 
 use crate::math::{clamp, linear_algebra::vector::Vector4};
 
-use super::{light::Light, vertex::Vertex};
-
-// todo: pass the light to the gradients?
-pub const LIGHT_DIR: Vector4 = Vector4 {
-    x: 0.1,
-    y: 0.6,
-    z: 0.3,
-    w: 1.0,
-};
+use super::vertex::Vertex;
 
 #[derive(Debug)]
 pub struct Gradients {
@@ -57,7 +49,7 @@ pub struct Triangle {
 }
 
 impl Gradients {
-    pub fn new(triangle: Triangle) -> Self {
+    pub fn new(triangle: Triangle, light_dir: Vector4) -> Self {
         let mut position = Gradient::default();
         position.value[0] = triangle.min.normal;
         position.value[1] = triangle.mid.normal;
@@ -72,9 +64,9 @@ impl Gradients {
         // light amount: interpolate between light directions
         // initial light amount is calculated by taking the dot product of each vertex normal with the light direction
         let mut light_amt = Gradient::default();
-        light_amt.value[0] = clamp(triangle.min.normal.dot(LIGHT_DIR), 0.0, 1.0) * 0.75 + 0.25; // +ambient light
-        light_amt.value[1] = clamp(triangle.mid.normal.dot(LIGHT_DIR), 0.0, 1.0) * 0.75 + 0.25; // +ambient light
-        light_amt.value[2] = clamp(triangle.max.normal.dot(LIGHT_DIR), 0.0, 1.0) * 0.75 + 0.25; // +ambient light
+        light_amt.value[0] = clamp(triangle.min.normal.dot(light_dir), 0.0, 1.0) * 0.75 + 0.25; // +ambient light
+        light_amt.value[1] = clamp(triangle.mid.normal.dot(light_dir), 0.0, 1.0) * 0.75 + 0.25; // +ambient light
+        light_amt.value[2] = clamp(triangle.max.normal.dot(light_dir), 0.0, 1.0) * 0.75 + 0.25; // +ambient light
 
         // one over z: to get perspective correct values (texture-mapping)
         // one over z is a linear function which makes our gradient formula work as opposed to the inverse which is not linear

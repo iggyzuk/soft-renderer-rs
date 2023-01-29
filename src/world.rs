@@ -32,6 +32,7 @@ pub enum WorldInputEvent {
 pub struct World {
     width: u32,
     height: u32,
+    pixels: Pixels,
     starfield: Starfield,
     renderer: Renderer,
     camera: Camera,
@@ -48,8 +49,9 @@ impl World {
         let mut world = Self {
             width,
             height,
+            pixels,
             starfield: Starfield::new(0, 0.1, 2.0),
-            renderer: Renderer::new(width, height, pixels),
+            renderer: Renderer::new(width, height),
             camera: Camera::new(
                 Vector4::new(0.0, 2.0, 2.0, 1.0),
                 Vector4::new(0.0, 0.0, -1.0, 0.0),
@@ -229,32 +231,51 @@ impl World {
         // # shadow mapping experiment
         // let shadow_projection = Matrix4::perspective(100.0, self.width as f32 / self.height as f32, 0.1, 100.0);
         let range = 5.0;
-        let shadow_projection = Matrix4::orthographic(-range, range, -range, range, 10.0, -10.0);
+        let aspect = self.width as f32 / self.height as f32;
+        let shadow_projection = Matrix4::orthographic(
+            -range * aspect,
+            range * aspect,
+            -range,
+            range,
+            20.0,
+            0.0,
+        );
         // let shadow_projection = Matrix4::perspective(130.0, self.width as f32 / self.height as f32, 0.1, 100.0);
 
         let mut shadow_light_transform = Matrix4::new_identity();
-        #[rustfmt::skip]
+        // #[rustfmt::skip]
         // shadow_light_transform.look_at(self.camera.position, self.camera.position + self.camera.direction, Vector4::UP);
-        shadow_light_transform.look_at(Vector4::new(1.58, 4.52, 2.7, 0.0), Vector4::new(-0.5, -0.8, -0.6, 0.0), Vector4::UP);
+        let follow = Vector4::new(self.camera.position.x, 0.0, self.camera.position.z, 0.0);
+        shadow_light_transform.look_at(
+            follow,
+            follow + Vector4::new(-0.4, -0.6, -0.3, 0.0).normalized(),
+            Vector4::UP,
+        );
+        // shadow_light_transform.look_at(Vector4::new(1.58, 4.52, 2.7, 0.0), Vector4::new(-0.5, -0.8, -0.6, 0.0), Vector4::UP);
 
         // dbg!(self.camera.position);
         // dbg!(self.camera.direction);
 
         let shadow_view_projection = Matrix4::multiply(&shadow_projection, &shadow_light_transform);
 
+        // @todo: store renderer and light in world instead of making new ones every frame!
+        let mut shadow_renderer = Renderer::new(self.width * 2, self.height * 2);
+
         // draw all instances
         for instance in self.instances.iter() {
-            instance.draw(&mut self.renderer, &shadow_view_projection, None);
+            instance.draw(&mut shadow_renderer, &shadow_view_projection, None);
         }
 
-        let shadow_depth = self.renderer.depth_buffer.clone();
-        let mut shadow_bitmap = self.renderer.color_buffer.clone();
+        let shadow_depth = shadow_renderer.depth_buffer.clone();
+        let mut shadow_bitmap = shadow_renderer.color_buffer.clone();
         for (i, value) in shadow_bitmap.chunks_exact_mut(4).enumerate() {
             value[0] = (shadow_depth[i] * 255.0) as u8;
             value[1] = (shadow_depth[i] * 255.0) as u8;
             value[2] = (shadow_depth[i] * 255.0) as u8;
             value[3] = 255;
         }
+
+        let shadow_bitmap_screenspace_clone = shadow_bitmap.clone();
 
         // println!("{:#?}", &shadow_bitmap);
 
@@ -351,13 +372,12 @@ impl World {
         // }
         // sb.draw(&mut self.renderer.color_buffer);
 
-        for x in 0..self.width / 4 {
-            for y in 0..self.height / 4 {
+        let scale = 8;
+        for x in 0..shadow_bitmap_screenspace_clone.width / scale {
+            for y in 0..shadow_bitmap_screenspace_clone.height / scale {
                 // let index = (x * 4 + y * 4 * self.width) as usize;
-                let d = light.bitmap.get_pixel(x * 4, y * 4);
-                self.renderer
-                    .color_buffer
-                    .set_pixel(x, y, &d);
+                let d = shadow_bitmap_screenspace_clone.get_pixel(x * scale, y * scale);
+                self.renderer.color_buffer.set_pixel(x, y, &d);
             }
         }
 
@@ -372,7 +392,16 @@ impl World {
         //     }
         // }
 
-        self.renderer.present();
+        let frame = self.pixels.get_frame_mut();
+
+        for (i, pixel) in frame.chunks_mut(4).enumerate() {
+            let byte_index = i * 4;
+            // take a slice of 4 bytes from the color_buffer and move them into the frame
+            // color_buffer:[RGBA] -> frame:[RGBA]
+            pixel.copy_from_slice(&self.renderer.color_buffer[byte_index..byte_index + 4]);
+        }
+
+        self.pixels.render().unwrap();
     }
 
     pub fn input(&mut self, event: WorldInputEvent, dt: f32) {

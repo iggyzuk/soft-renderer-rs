@@ -175,6 +175,15 @@ impl World {
             true,
         );
 
+        world.spawn_instance(
+            "./assets/ship.obj",
+            "./assets/pirates.png",
+            Vector4::new(-10.0, 0.0, 10.0, 0.0),
+            130.0,
+            1.0,
+            true,
+        );
+
         // create a sky bitmap
         let mut bitmap = Bitmap::new(1, 128);
         for y in 0..bitmap.height {

@@ -1504,6 +1504,7 @@ dependencies = [
  "log",
  "pixels",
  "rand",
+ "rayon",
  "simple_logger",
  "winit",
  "winit_input_helper",

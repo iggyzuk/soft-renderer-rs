@@ -1,4 +1,5 @@
 use pixels::Pixels;
+use rayon::slice::ParallelSlice;
 use std::mem;
 
 use crate::{
@@ -81,6 +82,7 @@ impl Renderer {
 
         // @todo: run this in parallel, will need a RwLock for color/depth buffers
         let identity = &Matrix4::new_identity();
+        // for chunk in mesh.indices.par_chunks_exact(3) {
         for chunk in mesh.indices.chunks_exact(3) {
             // create new vertices
             let mut v1 = mesh.vertices[chunk[0]];

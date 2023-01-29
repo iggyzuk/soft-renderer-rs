@@ -4,6 +4,8 @@ use std::{
     io::{BufRead, BufReader},
 };
 
+use rayon::prelude::*;
+
 use crate::{
     graphics::{mesh::Mesh, vertex::Vertex},
     math::linear_algebra::vector::Vector4,
@@ -40,7 +42,6 @@ pub fn load_mesh(filepath: &str) -> Mesh {
 
     for line in reader.lines() {
         if let Ok(text) = line {
-
             let tokens: Vec<&str> = text.split(' ').collect();
 
             assert!(tokens.len() > 0);
@@ -87,6 +88,7 @@ pub fn load_mesh(filepath: &str) -> Mesh {
 
     let indexed_model = to_indexed_model(model);
 
+    // make a new mesh and add all indexed-vertices/tex-coords/normals into it
     let mut mesh = Mesh::default();
 
     for i in 0..indexed_model.vertices.len() {
@@ -111,27 +113,37 @@ pub fn to_indexed_model(obj: OBJModel) -> IndexedModel {
     let mut index_map = HashMap::new(); // OBJModel.indices -> IndexedModel.indices
     let mut curr_vertex_index = 0;
 
-    for (i, curr_index) in obj.indices.iter().enumerate() {
-        let curr_pos = obj.vertices[curr_index.vertex_index];
-        let curr_tex_coord = obj.tex_coords[curr_index.tex_coord_index];
-        let curr_normal = obj.normals[curr_index.normal_index];
+    // index the model in parallel
+    let results: Vec<(usize, Option<usize>, Vector4, Vector4, Vector4)> = obj
+        .indices
+        .par_iter()
+        .enumerate()
+        .map(|(i, curr_index)| {
+            let curr_pos = obj.vertices[curr_index.vertex_index];
+            let curr_tex_coord = obj.tex_coords[curr_index.tex_coord_index];
+            let curr_normal = obj.normals[curr_index.normal_index];
 
-        // @todo: make this faster
-        // Check for duplicates O(n^2)
-        let mut prev_index = None;
+            // Check for duplicates O(n^2)
+            let mut prev_index = None;
 
-        for j in 0..i {
-            let old_index = &obj.indices[j];
+            for j in 0..i {
+                let old_index = &obj.indices[j];
 
-            if curr_index.vertex_index == old_index.vertex_index
-                && curr_index.tex_coord_index == old_index.tex_coord_index
-                && curr_index.normal_index == old_index.normal_index
-            {
-                prev_index = Some(j);
-                break;
+                if curr_index.vertex_index == old_index.vertex_index
+                    && curr_index.tex_coord_index == old_index.tex_coord_index
+                    && curr_index.normal_index == old_index.normal_index
+                {
+                    prev_index = Some(j);
+                    break;
+                }
             }
-        }
 
+            return (i, prev_index, curr_pos, curr_tex_coord, curr_normal);
+        })
+        .collect();
+
+    // add results to the model
+    for (i, prev_index, curr_pos, curr_tex_coord, curr_normal) in results {
         if let Some(value) = prev_index {
             model.indices.push(*index_map.get(&value).unwrap());
         } else {

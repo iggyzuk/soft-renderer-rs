@@ -10,9 +10,9 @@ edition = "2021"
 # default = ["optimize"]
 
 [dependencies]
-# egui = "0.20"
-# egui-wgpu = "0.20"
-# egui-winit = { version = "0.20", default-features = false, features = ["links"] }
+egui = "0.20"
+egui-wgpu = "0.20"
+egui-winit = { version = "0.20", default-features = false }
 simple_logger = "4.0.0"
 log = "0.4"
 pixels = "0.11.0"

@@ -1,31 +1,10 @@
-scan buffer (solid fill)
-    y-axis x-axis min x-axis max
-    y:0, min:2, max:6
-    y:1, min:1, max:7
-    y:2, min:0, max:8
+# Software Renderer in Rust
 
-2d-simplex: triangle
-    flat in 3d space
-    how to convert a triangle into a scan buffer?
-    #7 rewatch, reimplement
+## Checklist
 
-[~]understand the gradient formula
-    - it's a slope, X and Y diffs, steps
-[~]understand matrix look-at function
-[x]understand how the triangles clipped on the corners
 [ ]bitmap with various format f32 too for bitmap of depth or a u32 (4 bytes)
-[ ]create rasterize.rs
-[ ]remove pub in unnecessary places
-[ ]fix camera movements
-    [ ]improve passed enums
+[ ]move code into library
+[ ]move inputs from main into camera
 [ ]remove commented code
-[x]add some scenery models
-[ ]speed up mesh loader
 [ ]pass light direction to gradients
-[ ]more debug variables in renderer
-    [ ]egui: from ref
-    [ ]remove main.cpp and references
-[x]implement shadow mapping
-    https://www.youtube.com/watch?v=EsccgeUpdsM&list=PLEETnX-uPtBVG1ao7GCESh2vOayJXDbAl&index=7
-
-example scene with automatic motion: https://github.com/HannesMann/keyframe
+[ ]remove pub in unnecessary places

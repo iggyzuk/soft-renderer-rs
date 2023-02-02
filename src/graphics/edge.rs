@@ -8,13 +8,14 @@ use super::{
 };
 
 // move along the edge y and some x and increase steppable values as you go along
+// contains varying variables (like OpenGL)
 #[derive(Debug)]
 #[rustfmt::skip]
 pub struct Edge {
-    pub x: f32,                               // current x of the edge 
-    pub x_step: f32,                          // how much to step on the x-axis everytime we step down on y-axis
     pub y_start: u32,                         // y-start of the edge
     pub y_end: u32,                           // y-end of the edge
+    pub x: f32,                               // current x on the edge 
+    pub x_step: f32,                          // how much to step on the x-axis every time we step down on y-axis
     pub position: Stepable<Vector4>,          // position
     pub texcoords: Stepable<Vector4>,         // texture-coordinate start and step values
     pub one_over_z: Stepable<f32>,            // one-over-z start and step values
@@ -30,7 +31,7 @@ impl Edge {
         let y_start = start.position.y.ceil() as u32;
         let y_end = end.position.y.ceil() as u32;
 
-        // calculate the pixel distance between x start and y end, the same for y
+        // calculate the vertex distances (y2 - y1) and (x2 - x1)
         let y_dist = end.position.y - start.position.y;
         let x_dist = end.position.x - start.position.x;
 
@@ -96,6 +97,7 @@ impl Edge {
         };
     }
 
+    // called once we go down a scan line y+1
     pub fn step(&mut self) {
         // move forward on the current scan line (e.g. x+=1.666)
         self.x += self.x_step;
@@ -132,7 +134,9 @@ where
     ) -> Self {
         return Self {
             #[rustfmt::skip]
+            // set the initial value and make sure to offset its gradient to the center with x and y pre_steps
             value: gradient.value[start_index] + (gradient.step.x * x_prestep) + (gradient.step.y * y_prestep),
+            // set the edge step value: for every y it has a bit of x
             step: gradient.step.y + gradient.step.x * x_step,
         };
     }

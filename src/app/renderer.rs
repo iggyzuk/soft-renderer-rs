@@ -463,12 +463,15 @@ impl Renderer {
         material: &Material,
         light: Option<&Light>,
     ) {
-        // fill convention: if the pixel center is inside the shape it's drawn, otherwise it isn't
+        // let light: Option<&Light> = None;
+
+        // fill convention: if the pixel center is inside the shape it's drawn otherwise it isn't
         let x_min = left.x.ceil() as u32;
         let x_max = right.x.ceil() as u32; // not inclusive so ceil is fine
-        let x_prestep = x_min as f32 - left.x;
+        let x_prestep = x_min as f32 - left.x; // find the prestep for the current scan line to adjust all interpolants
 
         // define some gradient lerp values for the current scan line
+        // make sure to offset them by the x_prestep of the matching gradient step_x
         let mut px = left.position.value.x + gradients.position.step.x.x * x_prestep;
         let mut py = left.position.value.y + gradients.position.step.x.y * x_prestep;
         let mut pz = left.position.value.z + gradients.position.step.x.z * x_prestep;
@@ -513,8 +516,8 @@ impl Renderer {
                 let src_y = ((tex_coord_y * z) * (material.bitmap.height - 1) as f32 + 0.5) as u32;
 
                 // copy the pixel from the bitmap
-                // let mut tex_pixel = material.bitmap.get_pixel(src_x, src_y);
-                let mut tex_pixel = Color::WHITE;
+                let mut tex_pixel = material.bitmap.get_pixel(src_x, src_y);
+                // let mut tex_pixel = Color::WHITE;
                 // let mut tex_pixel: Color = Vector4::new(px, py, pz, 1.0).into();
 
                 // shadow maping with perspective texture coord correction
@@ -537,17 +540,17 @@ impl Renderer {
 
                         if shadow <= 0.5 {
                             // ~ solution 1: additive
-                            tex_pixel.r = (tex_pixel.r as f32 * 0.1) as u8;
-                            tex_pixel.g = (tex_pixel.g as f32 * 0.1) as u8;
-                            tex_pixel.b = (tex_pixel.b as f32 * 0.1) as u8;
+                            // tex_pixel.r = (tex_pixel.r as f32 * 0.1) as u8;
+                            // tex_pixel.g = (tex_pixel.g as f32 * 0.1) as u8;
+                            // tex_pixel.b = (tex_pixel.b as f32 * 0.1) as u8;
 
                             // ~ solution 2: fill
                             // tex_pixel = Color::newf(0.2, 0.2, 0.2, 1.0);
 
                             // ~ solution 3: dither
-                            // if (x as u32 + y) % 2 == 0 {
-                            //     tex_pixel = Color::BLUE;
-                            // }
+                            if (x as u32 + y) % 2 == 0 {
+                                tex_pixel = Color::BLUE;
+                            }
                         }
                     } else {
                         // # debug: see where the shadow-map ends

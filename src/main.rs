@@ -1,11 +1,10 @@
 use pixels::{Pixels, SurfaceTexture};
 use winit::{
     dpi::LogicalSize,
-    event::{Event, VirtualKeyCode},
+    event::{ElementState, Event, KeyboardInput, VirtualKeyCode, WindowEvent},
     event_loop::{ControlFlow, EventLoop},
     window::WindowBuilder,
 };
-use winit_input_helper::WinitInputHelper;
 use world::World;
 
 use crate::app::{gui::Framework, timestep::TimeStep};
@@ -17,7 +16,7 @@ mod world;
 
 const WIDTH: u32 = 1080;
 const HEIGHT: u32 = 720;
-const RESOLUTION: u32 = 2;
+const RESOLUTION: u32 = 4;
 const MS_PER_UPDATE: f32 = 1000.0 / 120.0;
 
 fn main() {
@@ -28,11 +27,7 @@ fn main() {
     let width_lowres = WIDTH / RESOLUTION;
     let height_lowres = HEIGHT / RESOLUTION;
 
-    // @todo: learn how winit works and its patterns
-
-    // create the event-loop and input
     let event_loop = EventLoop::new();
-    let mut input = WinitInputHelper::new();
 
     // create the window
     let window = {
@@ -69,52 +64,74 @@ fn main() {
     let mut timestep = TimeStep::new();
     let mut lag = 0.0;
 
+    // start running the loop
     event_loop.run(move |event, _, control_flow| {
-        if input.update(&event) {
-            if input.key_pressed(VirtualKeyCode::Escape) || input.quit() {
-                *control_flow = ControlFlow::Exit;
-                return;
+        // control flow: poll, poll, poll
+        control_flow.set_poll();
+
+        // pass all events to the world for camera movements
+        world.handle_event(&event);
+
+        // always pass window events to the gui framework
+        match event {
+            Event::WindowEvent { ref event, .. } => {
+                framework.handle_event(event);
             }
-
-            // Update the scale factor
-            if let Some(scale_factor) = input.scale_factor() {
-                framework.scale_factor(scale_factor);
-            }
-
-            // Resize the window
-            if let Some(size) = input.window_resized() {
-                if let Err(err) = pixels.resize_surface(size.width, size.height) {
-                    *control_flow = ControlFlow::Exit;
-                    return;
-                }
-                framework.resize(size.width, size.height);
-            }
-
-            let delta = timestep.delta();
-
-            lag += delta;
-
-            while lag >= MS_PER_UPDATE {
-                lag -= MS_PER_UPDATE;
-
-                if input.update(&event) {
-                    camera_controls(&mut input, &mut world, MS_PER_UPDATE / 1000.0);
-                }
-
-                world.update(MS_PER_UPDATE / 1000.0);
-            }
-
-            window.request_redraw();
+            _ => {}
         }
 
         match event {
-            Event::WindowEvent { event, .. } => {
-                // Update egui inputs
-                framework.handle_event(&event);
+            // match a `close-requested` window event
+            Event::WindowEvent {
+                event: WindowEvent::CloseRequested,
+                ..
+            } => control_flow.set_exit(),
+            // match a `keyboard-input` window event, only the pressed states
+            Event::WindowEvent { event, .. } => match event {
+                WindowEvent::KeyboardInput {
+                    input:
+                        KeyboardInput {
+                            virtual_keycode: Some(virtual_code),
+                            state: ElementState::Pressed,
+                            ..
+                        },
+                    ..
+                } =>
+                // match only on specific keys (`1`,`2`,`3`)
+                {
+                    match virtual_code {
+                        VirtualKeyCode::Escape => {
+                            control_flow.set_exit();
+                        }
+                        VirtualKeyCode::Key1 => {
+                            println!("1 press");
+                        }
+                        VirtualKeyCode::Key2 => {
+                            println!("2 press");
+                        }
+                        VirtualKeyCode::Key3 => {
+                            println!("3 press");
+                        }
+                        _ => {}
+                    }
+                }
+                _ => {}
+            },
+            Event::MainEventsCleared => {
+                // main loop
+                let delta = timestep.delta();
+
+                lag += delta;
+
+                while lag >= MS_PER_UPDATE {
+                    lag -= MS_PER_UPDATE;
+
+                    world.update(MS_PER_UPDATE / 1000.0);
+                    window.request_redraw();
+                }
             }
             Event::RedrawRequested(_) => {
                 world.draw(pixels.get_frame_mut(), 0.1);
-                // pixels.render().unwrap();
 
                 // Prepare egui
                 framework.prepare(&window);
@@ -139,39 +156,4 @@ fn main() {
             _ => (),
         }
     });
-}
-
-// @todo: how can we move this into the camera?
-fn camera_controls(input: &mut WinitInputHelper, world: &mut World, dt: f32) {
-    if input.key_held(VirtualKeyCode::W) {
-        world.input(world::WorldInputEvent::MoveForward, dt);
-    }
-    if input.key_held(VirtualKeyCode::S) {
-        world.input(world::WorldInputEvent::MoveBack, dt);
-    }
-    if input.key_held(VirtualKeyCode::E) {
-        world.input(world::WorldInputEvent::MoveUp, dt);
-    }
-    if input.key_held(VirtualKeyCode::Q) {
-        world.input(world::WorldInputEvent::MoveDown, dt);
-    }
-    if input.key_held(VirtualKeyCode::A) {
-        world.input(world::WorldInputEvent::MoveLeft, dt);
-    }
-    if input.key_held(VirtualKeyCode::D) {
-        world.input(world::WorldInputEvent::MoveRight, dt);
-    }
-
-    if input.key_held(VirtualKeyCode::Up) {
-        world.input(world::WorldInputEvent::LookUp, dt);
-    }
-    if input.key_held(VirtualKeyCode::Down) {
-        world.input(world::WorldInputEvent::LookDown, dt);
-    }
-    if input.key_held(VirtualKeyCode::Left) {
-        world.input(world::WorldInputEvent::LookLeft, dt);
-    }
-    if input.key_held(VirtualKeyCode::Right) {
-        world.input(world::WorldInputEvent::LookRight, dt);
-    }
 }

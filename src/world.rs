@@ -13,20 +13,6 @@ use crate::math::linear_algebra::{matrix::Matrix4, vector::Vector4};
 use image::EncodableLayout;
 use rand::Rng;
 
-#[derive(Debug)]
-pub enum WorldInputEvent {
-    MoveForward,
-    MoveBack,
-    MoveUp,
-    MoveDown,
-    MoveLeft,
-    MoveRight,
-    LookUp,
-    LookDown,
-    LookLeft,
-    LookRight,
-}
-
 pub struct World {
     width: u32,
     height: u32,
@@ -255,10 +241,10 @@ impl World {
         let shadow_view_projection = Matrix4::multiply(&shadow_projection, &shadow_light_transform);
 
         // shadow-map: draw all instances
-        // self.shadow_renderer.clear_depth_buffer();
-        // for instance in self.instances.iter() {
-        //     instance.draw(&mut self.shadow_renderer, &shadow_view_projection, None);
-        // }
+        self.shadow_renderer.clear_depth_buffer();
+        for instance in self.instances.iter() {
+            instance.draw(&mut self.shadow_renderer, &shadow_view_projection, None);
+        }
 
         let shadow_depth = self.shadow_renderer.depth_buffer.clone();
         let mut shadow_bitmap =
@@ -388,29 +374,6 @@ impl World {
         }
     }
 
-    pub fn input(&mut self, event: WorldInputEvent, dt: f32) {
-        println!("{:?}", event);
-
-        let move_speed = 75.0;
-        let look_speed = 3.0;
-
-        match event {
-            WorldInputEvent::MoveForward => self.camera.speed += move_speed * dt,
-            WorldInputEvent::MoveBack => self.camera.speed -= move_speed * dt,
-
-            WorldInputEvent::MoveUp => self.camera.v_speed += move_speed * dt,
-            WorldInputEvent::MoveDown => self.camera.v_speed -= move_speed * dt,
-
-            WorldInputEvent::MoveLeft => self.camera.h_speed += move_speed * dt,
-            WorldInputEvent::MoveRight => self.camera.h_speed -= move_speed * dt,
-
-            WorldInputEvent::LookUp => self.camera.v_angle += look_speed * dt,
-            WorldInputEvent::LookDown => self.camera.v_angle -= look_speed * dt,
-            WorldInputEvent::LookLeft => self.camera.h_angle -= look_speed * dt,
-            WorldInputEvent::LookRight => self.camera.h_angle += look_speed * dt,
-        }
-    }
-
     pub fn spawn_instance_rand(&mut self, mesh_path: &str, bitmap_path: &str, scale: f32) {
         let mesh_res = Self::make_mesh_res(mesh_path);
         let bitmap_res = Self::make_bitmap_res(bitmap_path);
@@ -468,5 +431,9 @@ impl World {
         let mut bitmap = Bitmap::new(image.width(), image.height());
         bitmap.pixels = image.to_rgba8().as_bytes().into();
         Rc::new(Box::new(bitmap))
+    }
+
+    pub fn handle_event(&mut self, event: &winit::event::Event<()>) {
+        self.camera.handle_event(event);
     }
 }

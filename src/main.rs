@@ -17,7 +17,9 @@ mod world;
 const WIDTH: u32 = 1080;
 const HEIGHT: u32 = 720;
 const RESOLUTION: u32 = 4;
-const MS_PER_UPDATE: f32 = 1000.0 / 120.0;
+const TICKS: f32 = 60.0;
+const SECONDS_PER_TICK: f32 = 1.0 / TICKS;
+const MS_PER_TICK: f32 = SECONDS_PER_TICK * 1000.0;
 
 fn main() {
     std::env::set_var("RUST_BACKTRACE", "1");
@@ -88,6 +90,14 @@ fn main() {
             } => control_flow.set_exit(),
             // match a `keyboard-input` window event, only the pressed states
             Event::WindowEvent { event, .. } => match event {
+                // resize pixel canvas
+                WindowEvent::Resized(size) => {
+                    if let Err(_) = pixels.resize_surface(size.width, size.height) {
+                        *control_flow = ControlFlow::Exit;
+                        return;
+                    }
+                    framework.resize(size.width, size.height);
+                }
                 WindowEvent::KeyboardInput {
                     input:
                         KeyboardInput {
@@ -123,10 +133,9 @@ fn main() {
 
                 lag += delta;
 
-                while lag >= MS_PER_UPDATE {
-                    lag -= MS_PER_UPDATE;
-
-                    world.update(MS_PER_UPDATE / 1000.0);
+                while lag >= MS_PER_TICK {
+                    lag -= MS_PER_TICK;
+                    world.update(SECONDS_PER_TICK);
                     window.request_redraw();
                 }
             }

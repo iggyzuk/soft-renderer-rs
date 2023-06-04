@@ -5,14 +5,13 @@ use winit::{
     event_loop::{ControlFlow, EventLoop},
     window::WindowBuilder,
 };
-use world::World;
+use core::app::timestep::TimeStep;
 
-use crate::app::{gui::Framework, timestep::TimeStep};
+use crate::world::World;
+use crate::gui::Framework;
 
-mod app;
-mod graphics;
-mod math;
-mod world;
+pub mod gui;
+pub mod world;
 
 const WIDTH: u32 = 1080;
 const HEIGHT: u32 = 720;

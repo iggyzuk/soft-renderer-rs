@@ -1,15 +1,15 @@
 use std::rc::Rc;
 
-use crate::app::camera::Camera;
-use crate::app::instance::Instance;
-use crate::app::mesh_loader::load_mesh;
-use crate::app::renderer::Renderer;
-use crate::graphics::light::Light;
-use crate::graphics::mesh::Mesh;
-use crate::graphics::vertex::Vertex;
-use crate::graphics::{bitmap::Bitmap, color::Color};
-use crate::math::lerp;
-use crate::math::linear_algebra::{matrix::Matrix4, vector::Vector4};
+use core::app::camera::Camera;
+use core::app::instance::Instance;
+use core::app::mesh_loader::load_mesh;
+use core::app::renderer::Renderer;
+use core::graphics::light::Light;
+use core::graphics::mesh::Mesh;
+use core::graphics::vertex::Vertex;
+use core::graphics::{bitmap::Bitmap, color::Color};
+use core::math::lerp;
+use core::math::linear_algebra::{matrix::Matrix4, vector::Vector4};
 use image::EncodableLayout;
 use rand::Rng;
 

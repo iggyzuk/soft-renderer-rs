@@ -269,6 +269,20 @@ dependencies = [
 ]
 
 [[package]]
+name = "core"
+version = "0.1.0"
+dependencies = [
+ "image",
+ "log",
+ "pixels",
+ "rand",
+ "rayon",
+ "simple_logger",
+ "winit",
+ "winit_input_helper",
+]
+
+[[package]]
 name = "core-foundation"
 version = "0.9.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1639,6 +1653,7 @@ dependencies = [
 name = "soft-rend"
 version = "0.1.0"
 dependencies = [
+ "core",
  "egui",
  "egui-wgpu",
  "egui-winit",

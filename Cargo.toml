@@ -3,13 +3,8 @@ name = "soft-rend"
 version = "0.1.0"
 edition = "2021"
 
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
-
-[features]
-# optimize = ["log/release_max_level_warn"]
-# default = ["optimize"]
-
 [dependencies]
+core = { path = "src/core" }
 egui = "0.20"
 egui-wgpu = "0.20"
 egui-winit = { version = "0.20", default-features = false }

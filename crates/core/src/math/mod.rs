@@ -1,3 +1,7 @@
+pub use linear_algebra::matrix::Matrix4;
+pub use linear_algebra::vector::Vector4;
+pub use linear_algebra::quaternion::Quaternion;
+
 pub mod linear_algebra;
 
 pub const PI: f32 = 3.14159265;

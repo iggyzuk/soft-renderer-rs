@@ -7,34 +7,40 @@ use crate::math::PI;
 
 use super::vector::Vector4;
 
+/// # Matrix
+///
+///  ```
+/// x basis vector (-)
+///  | y basis vector (|)
+///  | | z basis vector (/)
+///  | | |  translation (shear in the 4th dimension)
+///  | | |  |
+/// [1 0 0 tx]
+/// [0 1 0 ty]
+/// [0 0 1 tz]
+/// [0 0 0  1]
+/// ```
+///
+/// accessed with `[col][row]`
+///
+/// how matrix multiplaction works
+///
+/// ```
+/// bx by
+/// [a b] * [x] = x[a] + y[b] = [ax + by]
+/// [c d]   [y]    [c]    [d]   [cx + dy]
+///               -----------
+///             "where intuition is"
+/// ```
+///
+/// # Resources
+/// https://www.youtube.com/watch?v=kYB8IZa5AuE
 #[derive(Clone)]
 pub struct Matrix4 {
     pub matrix: [[f32; 4]; 4],
 }
 
-// Matrix
-//
-//  x basis vector (-)
-//  | y basis vector (|)
-//  | | z basis vector (/)
-//  | | |  translation (shear in the 4th dimension)
-//  | | |  |
-// [1 0 0 tx]
-// [0 1 0 ty]
-// [0 0 1 tz]
-// [0 0 0  1]
-//
-// accessed with [col][row]
-//
-// how matrix multiplaction works
-//
-// bx by
-// [a b] * [x] = x[a] + y[b] = [ax + by]
-// [c d]   [y]    [c]    [d]   [cx + dy]
-//               -----------
-//             where intuition is
-//
-// https://www.youtube.com/watch?v=kYB8IZa5AuE
+
 impl Matrix4 {
     pub fn new() -> Self {
         Self {

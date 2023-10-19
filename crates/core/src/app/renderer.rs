@@ -13,7 +13,7 @@ use crate::{
         mesh::Mesh,
         vertex::Vertex,
     },
-    math::linear_algebra::{matrix::Matrix4, vector::Vector4},
+    math::{Matrix4, Vector4},
 };
 
 #[derive(Debug, Default)]

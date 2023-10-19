@@ -139,7 +139,7 @@ fn main() {
                 }
             }
             Event::RedrawRequested(_) => {
-                world.draw(pixels.get_frame_mut(), 0.1);
+                world.draw(pixels.frame_mut(), 0.1);
 
                 // Prepare egui
                 framework.prepare(&window);

@@ -6,7 +6,8 @@ use crate::math::PI;
 
 use super::quaternion::Quaternion;
 
-// vector in homogeneous coordinates
+/// # Vector
+/// Vector in homogeneous coordinates
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct Vector4 {
     pub x: f32,

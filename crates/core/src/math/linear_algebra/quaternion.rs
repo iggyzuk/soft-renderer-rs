@@ -1,5 +1,7 @@
 use super::vector::Vector4;
 
+/// # Quaternion
+/// Good old quaternion - pointing somewhere in 4D
 #[derive(Clone, Copy, Debug)]
 pub struct Quaternion {
     pub x: f32,

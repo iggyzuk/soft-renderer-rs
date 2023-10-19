@@ -1,3 +1,3 @@
-pub mod matrix;
-pub mod quaternion;
-pub mod vector;
+pub(crate) mod matrix;
+pub(crate) mod quaternion;
+pub(crate) mod vector;

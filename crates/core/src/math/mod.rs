@@ -1,6 +1,7 @@
+// Re-export Matrix, Quaternion, Vector so we can use math::Matrix4 over math::linear_algebra::matrix::Matrix4
 pub use linear_algebra::matrix::Matrix4;
-pub use linear_algebra::vector::Vector4;
 pub use linear_algebra::quaternion::Quaternion;
+pub use linear_algebra::vector::Vector4;
 
 pub mod linear_algebra;
 

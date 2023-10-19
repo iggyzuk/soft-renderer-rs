@@ -19,6 +19,10 @@ Every pixel is drawn with love!
 
 `cargo run --bin basic --release`
 
+## Run Tests
+
+`cargo test --package core`
+
 ## Controls
 
 Move: WASD + QE

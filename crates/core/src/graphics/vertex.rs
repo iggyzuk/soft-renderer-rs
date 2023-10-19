@@ -21,7 +21,7 @@ impl Vertex {
     pub fn transform(mut self, transform_mat: &Matrix4, normal_mat: &Matrix4) -> Self {
         self.position = Matrix4::multiply_vector(transform_mat, self.position);
         self.normal = Matrix4::multiply_vector(normal_mat, self.normal); // for light direction
-        // self.shadow_map_coords = Matrix4::multiply_vector(normal_mat, self.shadow_map_coords); // for light direction
+                                                                         // self.shadow_map_coords = Matrix4::multiply_vector(normal_mat, self.shadow_map_coords); // for light direction
         return self;
     }
 
@@ -68,7 +68,9 @@ impl Vertex {
         );
 
         // lerp with shadow-map-coords
-        vertex.shadow_map_coords = self.shadow_map_coords.lerp(other.shadow_map_coords, lerp_amt);
+        vertex.shadow_map_coords = self
+            .shadow_map_coords
+            .lerp(other.shadow_map_coords, lerp_amt);
 
         return vertex;
     }

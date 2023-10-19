@@ -6,7 +6,6 @@ use crate::math::lerp;
 
 use super::color::Color;
 
-
 /// Bitmap with format: RGBA
 #[derive(Debug, Clone)]
 pub struct Bitmap {
@@ -17,7 +16,6 @@ pub struct Bitmap {
 
 // Bitmap is a list of pixels in RGBA format
 impl Bitmap {
-
     pub fn new(width: u32, height: u32) -> Self {
         Self {
             width,
@@ -27,7 +25,11 @@ impl Bitmap {
     }
 
     pub fn from_bytes(width: u32, height: u32, pixels: Vec<u8>) -> Self {
-        Self { width, height, pixels }
+        Self {
+            width,
+            height,
+            pixels,
+        }
     }
 
     pub fn fill(&mut self, color: &Color) {
@@ -45,7 +47,12 @@ impl Bitmap {
             return;
         }
 
-        let prev_color = Color::new(self.pixels[index + 0], self.pixels[index + 1], self.pixels[index + 2], 0xFF);
+        let prev_color = Color::new(
+            self.pixels[index + 0],
+            self.pixels[index + 1],
+            self.pixels[index + 2],
+            0xFF,
+        );
 
         let blend = (color.a as f32) / 255.0;
         self.pixels[index + 0] = lerp(prev_color.r as f32, color.r as f32, blend) as u8;
@@ -61,7 +68,12 @@ impl Bitmap {
             return Color::BLACK;
         }
 
-        Color::new(self.pixels[index + 0], self.pixels[index + 1], self.pixels[index + 2], self.pixels[index + 3])
+        Color::new(
+            self.pixels[index + 0],
+            self.pixels[index + 1],
+            self.pixels[index + 2],
+            self.pixels[index + 3],
+        )
     }
 
     // todo: remove this complexity (was a fun exersize)

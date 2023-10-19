@@ -1,3 +1,4 @@
+use core::app::timestep::TimeStep;
 use pixels::{Pixels, SurfaceTexture};
 use winit::{
     dpi::LogicalSize,
@@ -5,10 +6,9 @@ use winit::{
     event_loop::{ControlFlow, EventLoop},
     window::WindowBuilder,
 };
-use core::app::timestep::TimeStep;
 
-use crate::world::World;
 use crate::gui::Framework;
+use crate::world::World;
 
 pub mod gui;
 pub mod world;

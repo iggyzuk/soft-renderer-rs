@@ -40,7 +40,6 @@ pub struct Matrix4 {
     pub matrix: [[f32; 4]; 4],
 }
 
-
 impl Matrix4 {
     pub fn new() -> Self {
         Self {

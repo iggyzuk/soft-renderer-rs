@@ -1,4 +1,4 @@
-use super::{vertex::Vertex, gradients::Triangle};
+use super::{gradients::Triangle, vertex::Vertex};
 
 // clip vertices and return the vertices that are visible
 // 1. can be the same as the input

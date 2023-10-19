@@ -9,7 +9,7 @@ use core::graphics::mesh::Mesh;
 use core::graphics::vertex::Vertex;
 use core::graphics::{bitmap::Bitmap, color::Color};
 use core::math::lerp;
-use core::math::linear_algebra::{matrix::Matrix4, vector::Vector4};
+use core::math::{Matrix4, Vector4};
 use image::EncodableLayout;
 use rand::Rng;
 

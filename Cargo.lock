@@ -1589,6 +1589,7 @@ dependencies = [
  "simple_logger",
  "winit",
  "winit_input_helper",
+ "xbr",
 ]
 
 [[package]]
@@ -2328,6 +2329,12 @@ dependencies = [
  "once_cell",
  "pkg-config",
 ]
+
+[[package]]
+name = "xbr"
+version = "0.2.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "094821372f3ce488c579c7c6a75d44601c5d17e7b6746357e60ae6ebe02fb401"
 
 [[package]]
 name = "xcursor"

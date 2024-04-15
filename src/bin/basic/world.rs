@@ -32,8 +32,8 @@ impl World {
         let mut world = Self {
             width,
             height,
-            renderer: Renderer::new(width, height),
-            shadow_renderer: Renderer::new(width * 4, height * 4),
+            renderer: Renderer::new(width * 2, height * 2),
+            shadow_renderer: Renderer::new(width * 2, height * 2),
             camera: Camera::new(
                 Vector4::new(0.0, 2.0, 2.0, 1.0),
                 Vector4::new(0.0, 0.0, -1.0, 0.0),
@@ -224,49 +224,49 @@ impl World {
             Matrix4::orthographic(-range * aspect, range * aspect, -range, range, 25.0, -5.0);
         // let shadow_projection = Matrix4::perspective(130.0, self.width as f32 / self.height as f32, 0.1, 100.0);
 
-        let mut shadow_light_transform = Matrix4::new_identity();
-        // #[rustfmt::skip]
-        // shadow_light_transform.look_at(self.camera.position, self.camera.position + self.camera.direction, Vector4::UP);
-        let follow = Vector4::new(self.camera.position.x, 0.0, self.camera.position.z, 0.0);
-        shadow_light_transform.look_at(
-            follow,
-            follow + Vector4::new(-0.4, -0.6, -0.3, 0.0).normalized(),
-            Vector4::UP,
-        );
-        // shadow_light_transform.look_at(Vector4::new(1.58, 4.52, 2.7, 0.0), Vector4::new(-0.5, -0.8, -0.6, 0.0), Vector4::UP);
+        // let mut shadow_light_transform = Matrix4::new_identity();
+        // // #[rustfmt::skip]
+        // // shadow_light_transform.look_at(self.camera.position, self.camera.position + self.camera.direction, Vector4::UP);
+        // let follow = Vector4::new(self.camera.position.x, 0.0, self.camera.position.z, 0.0);
+        // shadow_light_transform.look_at(
+        //     follow,
+        //     follow + Vector4::new(-0.4, -0.6, -0.3, 0.0).normalized(),
+        //     Vector4::UP,
+        // );
+        // // shadow_light_transform.look_at(Vector4::new(1.58, 4.52, 2.7, 0.0), Vector4::new(-0.5, -0.8, -0.6, 0.0), Vector4::UP);
 
-        // dbg!(self.camera.position);
-        // dbg!(self.camera.direction);
+        // // dbg!(self.camera.position);
+        // // dbg!(self.camera.direction);
 
-        let shadow_view_projection = Matrix4::multiply(&shadow_projection, &shadow_light_transform);
+        // let shadow_view_projection = Matrix4::multiply(&shadow_projection, &shadow_light_transform);
 
-        // shadow-map: draw all instances
-        self.shadow_renderer.clear_depth_buffer();
-        for instance in self.instances.iter() {
-            instance.draw(&mut self.shadow_renderer, &shadow_view_projection, None);
-        }
+        // // shadow-map: draw all instances
+        // self.shadow_renderer.clear_depth_buffer();
+        // for instance in self.instances.iter() {
+        //     instance.draw(&mut self.shadow_renderer, &shadow_view_projection, None);
+        // }
 
-        let shadow_depth = self.shadow_renderer.depth_buffer.clone();
-        let mut shadow_bitmap =
-            Bitmap::new(self.shadow_renderer.width, self.shadow_renderer.height);
-        for (i, value) in shadow_bitmap.chunks_exact_mut(4).enumerate() {
-            value[0] = (shadow_depth[i] * 255.0) as u8;
-            value[1] = (shadow_depth[i] * 255.0) as u8;
-            value[2] = (shadow_depth[i] * 255.0) as u8;
-            value[3] = 255;
-        }
+        // let shadow_depth = self.shadow_renderer.depth_buffer.clone();
+        // let mut shadow_bitmap =
+        //     Bitmap::new(self.shadow_renderer.width, self.shadow_renderer.height);
+        // for (i, value) in shadow_bitmap.chunks_exact_mut(4).enumerate() {
+        //     value[0] = (shadow_depth[i] * 255.0) as u8;
+        //     value[1] = (shadow_depth[i] * 255.0) as u8;
+        //     value[2] = (shadow_depth[i] * 255.0) as u8;
+        //     value[3] = 255;
+        // }
 
-        let light = Light::new(
-            shadow_view_projection,
-            shadow_light_transform,
-            shadow_bitmap,
-        );
+        // let light = Light::new(
+        //     shadow_view_projection,
+        //     shadow_light_transform,
+        //     shadow_bitmap,
+        // );
 
         let view_projection = Matrix4::multiply(&self.projection, &self.camera.transform());
 
         // draw all instances
         for instance in self.instances.iter() {
-            instance.draw(&mut self.renderer, &view_projection, Option::Some(&light));
+            instance.draw(&mut self.renderer, &view_projection, Option::None);
         }
 
         // # debug: draw all vertices
@@ -344,16 +344,16 @@ impl World {
         // }
         // sb.draw(&mut self.renderer.color_buffer);
 
-        let scale = 16;
-        for x in 0..self.shadow_renderer.width / scale {
-            for y in 0..self.shadow_renderer.height / scale {
-                let index = (x * 4 * 4 + y * 4 * self.width * scale) as usize;
-                let d = self.shadow_renderer.depth_buffer[index];
-                self.renderer
-                    .color_buffer
-                    .set_pixel(x, y, &Color::newf(d, d, d, 1.0));
-            }
-        }
+        // let scale = 8;
+        // for x in 0..self.shadow_renderer.width / scale {
+        //     for y in 0..self.shadow_renderer.height / scale {
+        //         let index = (x * 4 * 4 + y * 4 * self.width * scale) as usize;
+        //         let d = self.shadow_renderer.depth_buffer[index];
+        //         self.renderer
+        //             .color_buffer
+        //             .set_pixel(x, y, &Color::newf(d, d, d, 1.0));
+        //     }
+        // }
 
         // # debug: show depth buffer
         // for x in 0..self.width / 4 {
@@ -366,11 +366,67 @@ impl World {
         //     }
         // }
 
-        for (i, pixel) in frame.chunks_mut(4).enumerate() {
-            let byte_index = i * 4;
+        // let rgb_bytes = self
+        //     .renderer
+        //     .color_buffer
+        //     .chunks(4)
+        //     .map(|x| &x[0..4])
+        //     .flatten()
+        //     .map(|x| *x)
+        //     .collect::<Vec<u8>>();
+
+        // let block = xbr::x2(xbr::Block::new(
+        //     rgb_bytes,
+        //     self.renderer.color_buffer.width,
+        //     self.renderer.color_buffer.height,
+        // ));
+
+        // let colors = block.bytes;
+        // // let colors = rgb_bytes;
+        // // let colors = block.colors();
+
+        // for (i, pixel) in frame.chunks_mut(4).enumerate() {
+        //     let byte_index = i * 4;
+        //     // take a slice of 4 bytes from the color_buffer and move them into the frame
+        //     // color_buffer:[RGBA] -> frame:[RGBA]
+        //     let color = &[
+        //         colors[byte_index],
+        //         colors[byte_index + 1],
+        //         colors[byte_index + 2],
+        //         255,
+        //     ];
+        //     pixel.copy_from_slice(color);
+        // }
+
+        let rgb_bytes = self
+            .renderer
+            .color_buffer
+            .chunks(4)
+            .map(|x| &x[0..3])
+            .flatten()
+            .map(|x| *x)
+            .collect::<Vec<u8>>();
+
+        let block = xbr::x2(xbr::Block::new(
+            rgb_bytes,
+            self.renderer.color_buffer.width,
+            self.renderer.color_buffer.height,
+        ));
+
+        let colors = block.bytes;
+
+        let mut byte_offset = 0;
+        for pixel in frame.chunks_mut(4) {
             // take a slice of 4 bytes from the color_buffer and move them into the frame
             // color_buffer:[RGBA] -> frame:[RGBA]
-            pixel.copy_from_slice(&self.renderer.color_buffer[byte_index..byte_index + 4]);
+            let color = &[
+                colors[byte_offset],
+                colors[byte_offset + 1],
+                colors[byte_offset + 2],
+                255,
+            ];
+            byte_offset += 3;
+            pixel.copy_from_slice(color);
         }
     }
 

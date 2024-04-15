@@ -2,7 +2,7 @@ use super::vertex::Vertex;
 
 #[derive(Debug, Default)]
 pub struct Mesh {
-    pub vertices: Vec<Vertex>,  // these vertices must be homogenous w: 1
+    pub vertices: Vec<Vertex>, // these vertices must be homogenous w: 1
     pub indices: Vec<usize>,
 }
 

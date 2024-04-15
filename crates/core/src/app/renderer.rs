@@ -539,17 +539,17 @@ impl Renderer {
 
                         if shadow <= 0.5 {
                             // ~ solution 1: additive
-                            // tex_pixel.r = (tex_pixel.r as f32 * 0.1) as u8;
-                            // tex_pixel.g = (tex_pixel.g as f32 * 0.1) as u8;
-                            // tex_pixel.b = (tex_pixel.b as f32 * 0.1) as u8;
+                            tex_pixel.r = (tex_pixel.r as f32 * 0.5) as u8;
+                            tex_pixel.g = (tex_pixel.g as f32 * 0.5) as u8;
+                            tex_pixel.b = (tex_pixel.b as f32 * 0.5) as u8;
 
                             // ~ solution 2: fill
                             // tex_pixel = Color::newf(0.2, 0.2, 0.2, 1.0);
 
                             // ~ solution 3: dither
-                            if (x as u32 + y) % 2 == 0 {
-                                tex_pixel = Color::BLUE;
-                            }
+                            // if (x as u32 + y) % 2 == 0 {
+                            //     tex_pixel = Color::BLUE;
+                            // }
                         }
                     } else {
                         // # debug: see where the shadow-map ends

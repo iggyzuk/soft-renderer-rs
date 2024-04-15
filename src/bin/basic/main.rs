@@ -13,10 +13,10 @@ use crate::world::World;
 pub mod gui;
 pub mod world;
 
-const WIDTH: u32 = 80; //1080/8;
-const HEIGHT: u32 = 80; //720/8;
+const WIDTH: u32 = 64; //1080/8;
+const HEIGHT: u32 = 64; //720/8;
 const RESOLUTION: u32 = 2;
-const TICKS: f32 = 60.0;
+const TICKS: f32 = 30.0;
 const SECONDS_PER_TICK: f32 = 1.0 / TICKS;
 const MS_PER_TICK: f32 = SECONDS_PER_TICK * 1000.0;
 

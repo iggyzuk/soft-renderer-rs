@@ -2332,9 +2332,9 @@ dependencies = [
 
 [[package]]
 name = "xbr"
-version = "0.2.0"
+version = "0.2.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "094821372f3ce488c579c7c6a75d44601c5d17e7b6746357e60ae6ebe02fb401"
+checksum = "887625ee857864a64749cdeb2058aa2286565a5f46c018fcfbf8456a0238fd15"
 
 [[package]]
 name = "xcursor"

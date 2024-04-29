@@ -26,14 +26,14 @@ pub struct World {
 
 impl World {
     /// Create a new `World` instance that can draw a moving box.
-    pub fn new(width: u32, height: u32) -> Self {
+    pub fn new(width: u32, height: u32, res: u32) -> Self {
         let aspect_ratio = width as f32 / height as f32;
 
         let mut world = Self {
             width,
             height,
-            renderer: Renderer::new(width * 2, height * 2),
-            shadow_renderer: Renderer::new(width * 8, height * 8),
+            renderer: Renderer::new(width * res, height * res),
+            shadow_renderer: Renderer::new(256, 256),
             camera: Camera::new(
                 Vector4::new(0.0, 2.0, 2.0, 1.0),
                 Vector4::new(0.0, 0.0, -1.0, 0.0),
@@ -240,33 +240,33 @@ impl World {
 
         let shadow_view_projection = Matrix4::multiply(&shadow_projection, &shadow_light_transform);
 
-        // shadow-map: draw all instances
-        self.shadow_renderer.clear_depth_buffer();
-        for instance in self.instances.iter() {
-            instance.draw(&mut self.shadow_renderer, &shadow_view_projection, None);
-        }
+        // // shadow-map: draw all instances
+        // self.shadow_renderer.clear_depth_buffer();
+        // for instance in self.instances.iter() {
+        //     instance.draw(&mut self.shadow_renderer, &shadow_view_projection, None);
+        // }
 
-        let shadow_depth = self.shadow_renderer.depth_buffer.clone();
-        let mut shadow_bitmap =
-            Bitmap::new(self.shadow_renderer.width, self.shadow_renderer.height);
-        for (i, value) in shadow_bitmap.chunks_exact_mut(4).enumerate() {
-            value[0] = (shadow_depth[i] * 255.0) as u8;
-            value[1] = (shadow_depth[i] * 255.0) as u8;
-            value[2] = (shadow_depth[i] * 255.0) as u8;
-            value[3] = 255;
-        }
+        // let shadow_depth = self.shadow_renderer.depth_buffer.clone();
+        // let mut shadow_bitmap =
+        //     Bitmap::new(self.shadow_renderer.width, self.shadow_renderer.height);
+        // for (i, value) in shadow_bitmap.chunks_exact_mut(4).enumerate() {
+        //     value[0] = (shadow_depth[i] * 255.0) as u8;
+        //     value[1] = (shadow_depth[i] * 255.0) as u8;
+        //     value[2] = (shadow_depth[i] * 255.0) as u8;
+        //     value[3] = 255;
+        // }
 
-        let light = Light::new(
-            shadow_view_projection,
-            shadow_light_transform,
-            shadow_bitmap,
-        );
+        // let light = Light::new(
+        //     shadow_view_projection,
+        //     shadow_light_transform,
+        //     shadow_bitmap,
+        // );
 
         let view_projection = Matrix4::multiply(&self.projection, &self.camera.transform());
 
         // draw all instances
         for instance in self.instances.iter() {
-            instance.draw(&mut self.renderer, &view_projection, Option::Some(&light));
+            instance.draw(&mut self.renderer, &view_projection, None); // Option::Some(&light)
         }
 
         // # debug: draw all vertices
@@ -366,36 +366,13 @@ impl World {
         //     }
         // }
 
-        let rgb_bytes = self
-            .renderer
-            .color_buffer
-            .chunks(4)
-            .map(|x| &x[0..3])
-            .flatten()
-            .map(|x| *x)
-            .collect::<Vec<u8>>();
-
         let block = xbr::x2(xbr::Block::new(
-            rgb_bytes,
+            self.renderer.color_buffer.pixels.clone(),
             self.renderer.color_buffer.width,
             self.renderer.color_buffer.height,
         ));
 
-        let colors = block.bytes;
-
-        let mut byte_offset = 0;
-        for pixel in frame.chunks_mut(4) {
-            // take a slice of 4 bytes from the color_buffer and move them into the frame
-            // color_buffer:[RGBA] -> frame:[RGBA]
-            let color = &[
-                colors[byte_offset],
-                colors[byte_offset + 1],
-                colors[byte_offset + 2],
-                255,
-            ];
-            byte_offset += 3;
-            pixel.copy_from_slice(color);
-        }
+        frame.copy_from_slice(&block.bytes);
     }
 
     pub fn spawn_instance_rand(&mut self, mesh_path: &str, bitmap_path: &str, scale: f32) {

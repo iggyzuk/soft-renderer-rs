@@ -13,8 +13,8 @@ use crate::world::World;
 pub mod gui;
 pub mod world;
 
-const WIDTH: u32 = 64; //1080/8;
-const HEIGHT: u32 = 64; //720/8;
+const WIDTH: u32 = 1080/2; //64 * 8; //1080/8;
+const HEIGHT: u32 = 720/2; //64 * 8; //720/8;
 const RESOLUTION: u32 = 2;
 const TICKS: f32 = 30.0;
 const SECONDS_PER_TICK: f32 = 1.0 / TICKS;
@@ -40,7 +40,10 @@ fn main() {
 
     // create the window
     let window = {
-        let size = LogicalSize::new(WIDTH as f64 * 4.0, HEIGHT as f64 * 4.0);
+        let size = LogicalSize::new(
+            WIDTH as f64 * 1.0,
+            HEIGHT as f64 * 1.0,
+        );
         WindowBuilder::new()
             .with_title("Software Renderer")
             .with_inner_size(size)
@@ -54,7 +57,7 @@ fn main() {
         let window_size = window.inner_size();
         let scale_factor = window.scale_factor() as f32;
         let surface_texture = SurfaceTexture::new(window_size.width, window_size.height, &window);
-        let pixels = Pixels::new(WIDTH * 2, HEIGHT * 2, surface_texture).unwrap();
+        let pixels = Pixels::new(WIDTH * (2), HEIGHT * (2), surface_texture).unwrap();
 
         let framework = Framework::new(
             &event_loop,
@@ -68,7 +71,7 @@ fn main() {
     };
 
     // create the world and time-step
-    let mut world = World::new(width_lowres, height_lowres);
+    let mut world = World::new(width_lowres, height_lowres, RESOLUTION);
 
     let mut timestep = TimeStep::new();
     let mut lag = 0.0;

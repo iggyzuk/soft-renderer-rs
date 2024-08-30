@@ -12,13 +12,13 @@ use super::renderer::Renderer;
 pub struct Instance {
     pub mesh: Rc<Box<Mesh>>,
     // @todo: use material instead of bitmap
-    pub bitmap: Rc<Box<Bitmap>>,
+    pub bitmap: Rc<Box<Bitmap<u8>>>,
     pub transform: Matrix4,
     pub light: bool,
 }
 
 impl Instance {
-    pub fn new(mesh: Rc<Box<Mesh>>, bitmap: Rc<Box<Bitmap>>, light: bool) -> Self {
+    pub fn new(mesh: Rc<Box<Mesh>>, bitmap: Rc<Box<Bitmap<u8>>>, light: bool) -> Self {
         Self {
             mesh,
             bitmap,

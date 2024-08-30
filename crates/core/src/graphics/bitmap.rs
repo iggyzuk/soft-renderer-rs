@@ -8,23 +8,23 @@ use super::color::Color;
 
 /// Bitmap with format: RGBA
 #[derive(Debug, Clone)]
-pub struct Bitmap {
+pub struct Bitmap<T> {
     pub width: u32,
     pub height: u32,
-    pub pixels: Vec<u8>,
+    pub pixels: Vec<T>,
 }
 
 // Bitmap is a list of pixels in RGBA format
-impl Bitmap {
+impl<T: Default + Clone> Bitmap<T> {
     pub fn new(width: u32, height: u32) -> Self {
         Self {
             width,
             height,
-            pixels: vec![0; (width * height * 4) as usize],
+            pixels: vec![T::default(); (width * height * 4) as usize],
         }
     }
 
-    pub fn from_bytes(width: u32, height: u32, pixels: Vec<u8>) -> Self {
+    pub fn from_bytes(width: u32, height: u32, pixels: Vec<T>) -> Self {
         Self {
             width,
             height,
@@ -32,6 +32,24 @@ impl Bitmap {
         }
     }
 
+    // todo: remove this complexity (was a fun exersize)
+    // pub fn copy_to_rgb(&self) -> Vec<u8> {
+    //     let total_pixels = (self.width * self.height) as usize;
+    //     let mut result = vec![0; total_pixels * Self::RGB as usize];
+
+    //     for index in 0..total_pixels {
+    //         let rgb_index = index * Self::RGB as usize;
+    //         let rgba_index = index * Self::RGBA as usize;
+
+    //         result[rgb_index + 0] = self.pixels[rgba_index + 0];
+    //         result[rgb_index + 1] = self.pixels[rgba_index + 1];
+    //         result[rgb_index + 2] = self.pixels[rgba_index + 2];
+    //     }
+    //     result
+    // }
+}
+
+impl Bitmap<u8> {
     pub fn fill(&mut self, color: &Color) {
         for x in 0..self.width {
             for y in 0..self.height {
@@ -75,33 +93,34 @@ impl Bitmap {
             self.pixels[index + 3],
         )
     }
-
-    // todo: remove this complexity (was a fun exersize)
-    // pub fn copy_to_rgb(&self) -> Vec<u8> {
-    //     let total_pixels = (self.width * self.height) as usize;
-    //     let mut result = vec![0; total_pixels * Self::RGB as usize];
-
-    //     for index in 0..total_pixels {
-    //         let rgb_index = index * Self::RGB as usize;
-    //         let rgba_index = index * Self::RGBA as usize;
-
-    //         result[rgb_index + 0] = self.pixels[rgba_index + 0];
-    //         result[rgb_index + 1] = self.pixels[rgba_index + 1];
-    //         result[rgb_index + 2] = self.pixels[rgba_index + 2];
-    //     }
-    //     result
-    // }
 }
 
-impl Deref for Bitmap {
-    type Target = Vec<u8>;
+impl Bitmap<f32> {
+    pub fn get_pixel(&self, x: u32, y: u32) -> (f32, f32, f32, f32) {
+        let index = ((x + y * self.width) * 4) as usize;
+
+        if index < 0 || index >= (self.width * self.height * 4) as usize {
+            return (0.0, 0.0, 0.0, 0.0);
+        }
+
+        (
+            self.pixels[index + 0],
+            self.pixels[index + 1],
+            self.pixels[index + 2],
+            self.pixels[index + 3],
+        )
+    }
+}
+
+impl<T> Deref for Bitmap<T> {
+    type Target = Vec<T>;
 
     fn deref(&self) -> &Self::Target {
         &self.pixels
     }
 }
 
-impl DerefMut for Bitmap {
+impl<T> DerefMut for Bitmap<T> {
     fn deref_mut(&mut self) -> &mut Self::Target {
         &mut self.pixels
     }
@@ -133,7 +152,7 @@ mod tests {
 
     #[test]
     fn test_bitmap_color_bytes() {
-        let mut bitmap = Bitmap::new(2, 2);
+        let mut bitmap: Bitmap<u8> = Bitmap::new(2, 2);
         bitmap.fill(&Color::GREEN);
 
         assert_eq!(bitmap.pixels[0], 0x00);

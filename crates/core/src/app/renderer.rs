@@ -26,10 +26,10 @@ pub struct Debug {
 
 #[derive(Debug)]
 pub struct Renderer {
-    pub width: u32,             // width in pixels
-    pub height: u32,            // height in pixels
-    pub screenspace: Matrix4,   // screen-space matrix for rasterizing
-    pub color_buffer: Bitmap,   // the main color buffer (r,g,b,a)
+    pub width: u32,               // width in pixels
+    pub height: u32,              // height in pixels
+    pub screenspace: Matrix4,     // screen-space matrix for rasterizing
+    pub color_buffer: Bitmap<u8>, // the main color buffer (r,g,b,a)
     pub depth_buffer: Vec<f32>, // the z buffer (1 - 0) -> (far - close)     // @todo: could be an array/slice
     pub debug: Debug,           // debug variables for displaying extra information
 }
@@ -539,21 +539,25 @@ impl Renderer {
 
                         if shadow <= 0.5 {
                             // ~ solution 1: additive
-                            // tex_pixel.r = (tex_pixel.r as f32 * 0.1) as u8;
-                            // tex_pixel.g = (tex_pixel.g as f32 * 0.1) as u8;
-                            // tex_pixel.b = (tex_pixel.b as f32 * 0.1) as u8;
+                            tex_pixel.r = (tex_pixel.r as f32 * 0.6) as u8;
+                            tex_pixel.g = (tex_pixel.g as f32 * 0.6) as u8;
+                            tex_pixel.b = (tex_pixel.b as f32 * 0.6) as u8;
 
                             // ~ solution 2: fill
                             // tex_pixel = Color::newf(0.2, 0.2, 0.2, 1.0);
 
                             // ~ solution 3: dither
-                            if (x as u32 + y) % 2 == 0 {
-                                tex_pixel = Color::BLUE;
-                            }
+                            // if (x as u32 + y) % 2 == 0 {
+                            //     tex_pixel = Color::BLUE;
+                            // }
                         }
                     } else {
                         // # debug: see where the shadow-map ends
                         // tex_pixel = Color::BLACK;
+
+                        // tex_pixel.r = (tex_pixel.r as f32 * 0.4) as u8;
+                        tex_pixel.g = (tex_pixel.g as f32 * 0.4) as u8;
+                        // tex_pixel.b = (tex_pixel.b as f32 * 0.4) as u8;
                     }
                 }
 
@@ -624,7 +628,10 @@ impl Renderer {
         }
     }
 
-    fn calc_shadow_amount(shadow_map: &Bitmap, initial_shadow_map_coords: Vector4) -> Option<f32> {
+    fn calc_shadow_amount(
+        shadow_map: &Bitmap<f32>,
+        initial_shadow_map_coords: Vector4,
+    ) -> Option<f32> {
         let x = initial_shadow_map_coords.x;
         let y = initial_shadow_map_coords.y;
         let z = initial_shadow_map_coords.z;
@@ -646,8 +653,8 @@ impl Renderer {
         // }
 
         // stretch across to fit the shadow_map texture
-        let src_x = (normal_x * (shadow_map.width - 1) as f32 + 0.5) as u32;
-        let src_y = (normal_y * (shadow_map.height - 1) as f32 + 0.5) as u32;
+        let src_x = (normal_x * (shadow_map.width as f32 - 1.0) + 0.5) as u32;
+        let src_y = (normal_y * (shadow_map.height as f32 - 1.0) + 0.5) as u32;
 
         if src_x <= 0
             || src_x >= shadow_map.width - 1
@@ -660,12 +667,8 @@ impl Renderer {
         return Some(Self::sample_shadow_map(shadow_map, src_x, src_y, z));
     }
 
-    // @todo: this could be better if depth wasn't a u8 but an f32
-    fn sample_shadow_map(shadow_map: &Bitmap, x: u32, y: u32, compare: f32) -> f32 {
-        // the z value of the current pixel
-        let mapped_compare = (compare * 255.0) as u8;
-
-        return if shadow_map.get_pixel(x, y).r < mapped_compare - 1 {
+    fn sample_shadow_map(shadow_map: &Bitmap<f32>, x: u32, y: u32, compare: f32) -> f32 {
+        return if shadow_map.get_pixel(x, y).0 < compare - 0.01 {
             0.0
         } else {
             1.0

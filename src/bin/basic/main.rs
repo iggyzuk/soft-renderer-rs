@@ -15,7 +15,7 @@ pub mod world;
 
 const WIDTH: u32 = 1080;
 const HEIGHT: u32 = 720;
-const RESOLUTION: u32 = 4;
+const RESOLUTION: u32 = 2;
 const TICKS: f32 = 60.0;
 const SECONDS_PER_TICK: f32 = 1.0 / TICKS;
 const MS_PER_TICK: f32 = SECONDS_PER_TICK * 1000.0;

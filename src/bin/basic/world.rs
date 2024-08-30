@@ -33,7 +33,7 @@ impl World {
             width,
             height,
             renderer: Renderer::new(width, height),
-            shadow_renderer: Renderer::new(width * 4, height * 4),
+            shadow_renderer: Renderer::new(512, 512),
             camera: Camera::new(
                 Vector4::new(0.0, 2.0, 2.0, 1.0),
                 Vector4::new(0.0, 0.0, -1.0, 0.0),
@@ -247,13 +247,13 @@ impl World {
         }
 
         let shadow_depth = self.shadow_renderer.depth_buffer.clone();
-        let mut shadow_bitmap =
+        let mut shadow_bitmap: Bitmap<f32> =
             Bitmap::new(self.shadow_renderer.width, self.shadow_renderer.height);
         for (i, value) in shadow_bitmap.chunks_exact_mut(4).enumerate() {
-            value[0] = (shadow_depth[i] * 255.0) as u8;
-            value[1] = (shadow_depth[i] * 255.0) as u8;
-            value[2] = (shadow_depth[i] * 255.0) as u8;
-            value[3] = 255;
+            value[0] = shadow_depth[i];
+            value[1] = shadow_depth[i];
+            value[2] = shadow_depth[i];
+            value[3] = 1.0;
         }
 
         let light = Light::new(
@@ -344,16 +344,17 @@ impl World {
         // }
         // sb.draw(&mut self.renderer.color_buffer);
 
-        let scale = 16;
-        for x in 0..self.shadow_renderer.width / scale {
-            for y in 0..self.shadow_renderer.height / scale {
-                let index = (x * 4 * 4 + y * 4 * self.width * scale) as usize;
-                let d = self.shadow_renderer.depth_buffer[index];
-                self.renderer
-                    .color_buffer
-                    .set_pixel(x, y, &Color::newf(d, d, d, 1.0));
-            }
-        }
+        // draw shadow texture
+        // let scale = 16;
+        // for x in 0..self.shadow_renderer.width / scale {
+        //     for y in 0..self.shadow_renderer.height / scale {
+        //         let index = (x * 4 * 4 + y * 4 * self.width * scale) as usize;
+        //         let d = self.shadow_renderer.depth_buffer[index];
+        //         self.renderer
+        //             .color_buffer
+        //             .set_pixel(x, y, &Color::newf(d, d, d, 1.0));
+        //     }
+        // }
 
         // # debug: show depth buffer
         // for x in 0..self.width / 4 {
@@ -415,7 +416,7 @@ impl World {
     pub fn make_instance(
         &mut self,
         mesh_res: &Rc<Box<Mesh>>,
-        bitmap_res: &Rc<Box<Bitmap>>,
+        bitmap_res: &Rc<Box<Bitmap<u8>>>,
         light: bool,
     ) -> Instance {
         Instance::new(Rc::clone(&mesh_res), Rc::clone(&bitmap_res), light)
@@ -426,7 +427,7 @@ impl World {
         Rc::new(Box::new(mesh))
     }
 
-    pub fn make_bitmap_res(path: &str) -> Rc<Box<Bitmap>> {
+    pub fn make_bitmap_res(path: &str) -> Rc<Box<Bitmap<u8>>> {
         let image = image::open(path).unwrap();
         let mut bitmap = Bitmap::new(image.width(), image.height());
         bitmap.pixels = image.to_rgba8().as_bytes().into();

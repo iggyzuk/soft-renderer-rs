@@ -5,11 +5,11 @@ use super::bitmap::Bitmap;
 pub struct Light {
     pub projection: Matrix4,
     pub transform: Matrix4,
-    pub bitmap: Bitmap, // todo: use 1d format!
+    pub bitmap: Bitmap<f32>, // todo: use 1d format!
 }
 
 impl Light {
-    pub fn new(projection: Matrix4, transform: Matrix4, depth: Bitmap) -> Self {
+    pub fn new(projection: Matrix4, transform: Matrix4, depth: Bitmap<f32>) -> Self {
         return Self {
             projection,
             transform,
